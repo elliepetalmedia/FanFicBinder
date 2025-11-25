@@ -284,7 +284,7 @@ export default function Home() {
               )}
             </div>
 
-            <Card className="flex-1 border-border bg-card/50 backdrop-blur-sm flex flex-col min-h-[400px]">
+            <Card className="flex-1 border-border bg-card/50 backdrop-blur-sm flex flex-col min-h-[400px] mb-20 lg:mb-0">
               <CardContent className="p-0 flex-1 flex flex-col">
                 {chapters.length === 0 ? (
                   <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground p-8">
@@ -323,7 +323,7 @@ export default function Home() {
                 )}
               </CardContent>
               {chapters.length > 0 && (
-                <div className="p-4 border-t border-border bg-card rounded-b-lg">
+                <div className="p-4 border-t border-border bg-card rounded-b-lg hidden lg:block">
                   <Button 
                     size="lg" 
                     className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold shadow-lg shadow-primary/20"
@@ -337,6 +337,20 @@ export default function Home() {
             </Card>
           </div>
         </div>
+        
+        {/* Mobile Sticky Download Button */}
+        {chapters.length > 0 && (
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-card border-t border-border lg:hidden z-50 shadow-xl">
+            <Button 
+              size="lg" 
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold shadow-lg shadow-primary/20"
+              onClick={handleDownload}
+            >
+              <Download className="mr-2 h-5 w-5" />
+              Download EPUB ({chapters.reduce((acc, c) => acc + c.wordCount, 0).toLocaleString()} words)
+            </Button>
+          </div>
+        )}
 
         {/* SEO Article */}
         <article className="max-w-3xl mx-auto mt-24 text-muted-foreground font-sans space-y-8">
