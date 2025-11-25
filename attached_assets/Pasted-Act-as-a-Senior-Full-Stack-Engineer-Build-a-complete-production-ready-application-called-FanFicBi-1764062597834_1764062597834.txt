@@ -1,0 +1,133 @@
+Act as a Senior Full-Stack Engineer. Build a complete, production-ready application called "FanFicBinder".
+
+1. FILE STRUCTURE & ARCHITECTURE
+Create the following files:
+- index.html (Frontend Interface)
+- style.css (Dark Mode Writer Theme)
+- script.js (Frontend Logic & EPUB Generation)
+- /functions/fetch-url.js (Serverless Backend for CORS)
+- package.json (Dependencies for the backend)
+- /pages/about.html
+- /pages/contact.html
+- /pages/privacy.html
+
+2. TECHNICAL REQUIREMENTS
+- **Frontend Stack:** HTML5, CSS3, Vanilla JS.
+- **Backend Stack:** Netlify Functions (Node.js).
+- **Libraries (Frontend CDN):**
+  - JSZip: https://unpkg.com/jszip/dist/jszip.min.js
+  - EJS: https://unpkg.com/ejs/ejs.min.js
+  - jEpub: https://unpkg.com/jepub/dist/jepub.js
+- **Libraries (Backend package.json):**
+  - axios
+  - jsdom
+  - @mozilla/readability
+
+3. BACKEND LOGIC (/functions/fetch-url.js)
+- Input: Receives a URL query parameter `?url=...`
+- Process:
+  1. Use `axios` to fetch the HTML of the target URL.
+  2. Use `JSDOM` to create a virtual DOM.
+  3. Use `@mozilla/readability` to parse the article and strip ads/nav.
+  4. Extract: `title`, `byline`, `content` (HTML string).
+- Output: Return JSON object with title and content. Handle errors gracefully (400/500 status).
+
+4. FRONTEND LOGIC (script.js)
+- **State:** Maintain an array `chapters` to store added content.
+- **Input Mode 1: URL Fetcher**
+  - Input field for URL.
+  - "Fetch Chapter" button calls `/.netlify/functions/fetch-url`.
+  - On success, push result to `chapters` array and update UI list.
+- **Input Mode 2: Manual Entry**
+  - "Add Custom Chapter" button opens a modal/form.
+  - Inputs: Chapter Title, Body Text (Textarea).
+  - On save, push manual object to `chapters` array.
+- **EPUB Generation:**
+  - "Download EPUB" button.
+  - Initialize `new jEpub()`.
+  - Metadata Inputs: Book Title, Author Name.
+  - Loop through `chapters` array and add each to the book.
+  - Generate `.epub` blob and trigger download.
+
+5. DESIGN SYSTEM (style.css)
+- **Theme:** "Writer's Retreat". Background #1c1c1e, Paper/Surface #2c2c2e, Text #e5e5e7, Accent #ff9f0a (Orange).
+- **Typography:** 'Merriweather' (Serif) for reading text, 'Inter' for UI.
+- **Layout:**
+  - Header: Logo "FanFicBinder".
+  - Main: Two-column layout.
+    - Left: Input Tools (Tabs for "URL" vs "Manual").
+    - Right: "Binder Queue" (List of chapters added so far).
+- **Components:**
+  - Chapter Card: Shows Title + Word Count + "Remove" button.
+  - Download Button: Large, prominent, sticky at bottom on mobile.
+
+6. INDEX.HTML CONTENT
+- Header & Interface container.
+- **SEO Article:** Below the app, insert an `<article>` with this EXACT HTML:
+  """
+  <div style="max-width: 800px; margin: 4rem auto; color: #d1d1d6; font-family: sans-serif;">
+    <h2>Read Fanfiction Offline on Kindle & eReaders</h2>
+    <p>FanFicBinder is the ultimate tool for archiving web serials, fanfiction, and articles. Whether you are saving a deleted fic from AO3, compiling a series from Wattpad, or just prefer reading long-form content on an e-ink screen, our tool makes it instant.</p>
+
+    <h3>How it Works</h3>
+    <p>Most fanfiction sites are designed for browsers, not e-readers. We use Mozilla's advanced "Readability" engine to strip away the sidebars, ads, and comments, leaving only the story text. We then package it into a valid EPUB file compatible with:</p>
+    <ul>
+      <li>Amazon Kindle (via Send-to-Kindle)</li>
+      <li>Apple Books (iPad/iPhone)</li>
+      <li>Kobo & Nook</li>
+    </ul>
+
+    <h3>Why "Bind" Your Fics?</h3>
+    <p>Authors sometimes delete their work. By downloading an EPUB, you ensure you have a permanent offline copy of your favorite stories. Plus, reading on an e-reader reduces eye strain compared to scrolling on a phone.</p>
+  </div>
+  """
+- Ad Slots: Add `<div id="ad-header" class="ad-slot"></div>` and `<div id="ad-footer" class="ad-slot"></div>`.
+- Tracking Comments: `<!-- GOOGLE ANALYTICS HERE -->` and `<!-- GOOGLE ADSENSE HERE -->`.
+- Footer: Links to `/pages/about.html`, `/pages/contact.html`, `/pages/privacy.html`. Copyright 2025 Ellie Petal Media.
+
+7. LEGAL PAGES (Generate these files with the EXACT content below)
+
+**File: /pages/about.html**
+<!DOCTYPE html>
+<html lang="en" style="background:#1c1c1e; color:#e5e5e7; font-family:sans-serif; padding:2rem;">
+<head><title>About Us</title><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+<body>
+  <a href="/" style="color:#ff9f0a; text-decoration:none;">&larr; Back to Binder</a>
+  <h1 style="color:#ff9f0a">About FanFicBinder</h1>
+  <p>FanFicBinder.com is a digital utility project published by <strong>Ellie Petal Media</strong>.</p>
+  <p>We are readers and writers who love the fanfiction community. We built this tool because we wanted a reliable, private way to move stories from the web to our e-readers without installing sketchy software. Our tool runs primarily in your browser, using a lightweight serverless function only to fetch the text you request.</p>
+</body>
+</html>
+
+**File: /pages/contact.html**
+<!DOCTYPE html>
+<html lang="en" style="background:#1c1c1e; color:#e5e5e7; font-family:sans-serif; padding:2rem;">
+<head><title>Contact</title><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+<body>
+  <a href="/" style="color:#ff9f0a; text-decoration:none;">&larr; Back to Binder</a>
+  <h1 style="color:#ff9f0a">Contact Us</h1>
+  <p><strong>Publisher:</strong> Ellie Petal Media</p>
+  <h3>Support Policy</h3>
+  <p>This tool is provided as-is. We cannot provide technical support for specific e-reader compatibility issues.</p>
+  <h3>Business Inquiries</h3>
+  <p>For advertising and legal matters, please contact: <strong>legal@fanficbinder.com</strong></p>
+</body>
+</html>
+
+**File: /pages/privacy.html**
+<!DOCTYPE html>
+<html lang="en" style="background:#1c1c1e; color:#e5e5e7; font-family:sans-serif; padding:2rem;">
+<head><title>Privacy Policy</title><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+<body>
+  <a href="/" style="color:#ff9f0a; text-decoration:none;">&larr; Back to Binder</a>
+  <h1 style="color:#ff9f0a">Privacy Policy</h1>
+  <p><strong>Last Updated:</strong> 2025</p>
+  <p>This Privacy Policy applies to FanFicBinder.com, published by Ellie Petal Media.</p>
+  <h3>1. Data Processing</h3>
+  <p>When you use the "Fetch from URL" feature, the URL is sent to our serverless function solely to retrieve the text. We do not store, log, or retain the content of the stories you download. The EPUB file generation happens locally on your device.</p>
+  <h3>2. Cookies</h3>
+  <p>We use third-party services (Google Analytics, Google AdSense) that use cookies to analyze traffic and serve personalized ads. By using this site, you consent to the use of cookies.</p>
+  <h3>3. Contact</h3>
+  <p>legal@fanficbinder.com</p>
+</body>
+</html>
