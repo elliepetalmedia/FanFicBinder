@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Link } from "wouter";
-import { Book, Download, Trash2, Plus, Link as LinkIcon, FileText, Loader2 } from "lucide-react";
+import { Book, Download, Trash2, Plus, Link as LinkIcon, FileText, Loader2, Image as ImageIcon, X } from "lucide-react";
 
 export default function Home() {
   const { toast } = useToast();
@@ -33,6 +33,8 @@ export default function Home() {
   // Metadata State
   const [bookTitle, setBookTitle] = useState("My FanFic Binder");
   const [authorName, setAuthorName] = useState("Various Authors");
+  const [coverImage, setCoverImage] = useState<ArrayBuffer | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
 
   const handleFetchUrl = async () => {
     if (!urlInput) return;
@@ -99,7 +101,11 @@ export default function Home() {
     }
 
     try {
-      await generateEpub(chapters, { title: bookTitle, author: authorName });
+      await generateEpub(chapters, { 
+        title: bookTitle, 
+        author: authorName,
+        cover: coverImage
+      });
       toast({
         title: "Download Started",
         description: "Your EPUB is being generated.",
@@ -111,6 +117,39 @@ export default function Home() {
         variant: "destructive",
       });
     }
+  };
+
+  const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid File",
+        description: "Please upload an image file.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Create preview URL
+    const previewUrl = URL.createObjectURL(file);
+    setCoverPreview(previewUrl);
+
+    // Read as ArrayBuffer for jEpub
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target?.result) {
+        setCoverImage(event.target.result as ArrayBuffer);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  const handleRemoveCover = () => {
+    if (coverPreview) URL.revokeObjectURL(coverPreview);
+    setCoverPreview(null);
+    setCoverImage(null);
   };
 
   return (
@@ -263,6 +302,42 @@ export default function Home() {
                     onChange={(e) => setAuthorName(e.target.value)}
                     className="bg-input border-border"
                   />
+                </div>
+                
+                <div className="space-y-2 pt-2">
+                  <Label>Cover Image</Label>
+                  {coverPreview ? (
+                    <div className="relative aspect-[2/3] w-32 mx-auto group rounded-lg overflow-hidden border border-border shadow-sm">
+                      <img 
+                        src={coverPreview} 
+                        alt="Book Cover" 
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <Button 
+                          variant="destructive" 
+                          size="icon" 
+                          onClick={handleRemoveCover}
+                          className="h-8 w-8"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:bg-accent/5 transition-colors cursor-pointer relative">
+                      <input 
+                        type="file" 
+                        accept="image/*"
+                        onChange={handleCoverUpload}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                      />
+                      <div className="flex flex-col items-center gap-2 text-muted-foreground pointer-events-none">
+                        <ImageIcon className="w-8 h-8 opacity-50" />
+                        <span className="text-xs">Upload Cover</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
