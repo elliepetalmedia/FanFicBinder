@@ -134,6 +134,15 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="flex-1 container mx-auto px-4 py-8">
+        <div className="mb-8 text-center max-w-2xl mx-auto space-y-1">
+          <p className="text-lg text-foreground/90">
+            FanFicBinder helps you archive web serials and fanfiction into clean EPUBs for your e-reader.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            See below for details
+          </p>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
           {/* Left Column: Input Tools */}
