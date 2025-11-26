@@ -170,9 +170,6 @@ export default function Home() {
               Build your ebook, chapter by chapter.
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">
-            100% client-side processing—nothing is uploaded or stored anywhere.
-          </p>
         </div>
       </header>
 
@@ -183,7 +180,7 @@ export default function Home() {
             FanFicBinder helps you archive web serials and fanfiction into clean EPUBs for your e-reader.
           </p>
           <p className="text-sm text-muted-foreground">
-            See below for details
+            100% client-side processing—nothing is uploaded or stored anywhere. See below for details.
           </p>
         </div>
 
