@@ -14,10 +14,50 @@ export interface BookMetadata {
   cover?: ArrayBuffer | null;
 }
 
+function escapeXml(unsafe: string): string {
+  return unsafe.replace(/[<>&'"]/g, (c) => {
+    switch (c) {
+      case '<': return '&lt;';
+      case '>': return '&gt;';
+      case '&': return '&amp;';
+      case '\'': return '&apos;';
+      case '"': return '&quot;';
+      default: return c;
+    }
+  });
+}
+
+// Helper to ensure content is valid XHTML body content
+function sanitizeContent(content: string): string {
+  // Basic cleanup - ensure paragraphs
+  let clean = content;
+  
+  // If content has no tags, wrap paragraphs
+  if (!clean.includes('<p>') && !clean.includes('<div>')) {
+    clean = clean.split('\n').map(line => line.trim()).filter(line => line.length > 0).map(line => `<p>${line}</p>`).join('\n');
+  }
+
+  // Remove scripts, styles, iframes
+  clean = clean.replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gim, "")
+               .replace(/<style\b[^>]*>([\s\S]*?)<\/style>/gim, "")
+               .replace(/<iframe\b[^>]*>([\s\S]*?)<\/iframe>/gim, "");
+
+  // Ensure images are closed properly for XHTML
+  clean = clean.replace(/<img([^>]+)>/gi, '<img$1 />');
+  clean = clean.replace(/<br>/gi, '<br />');
+  clean = clean.replace(/<hr>/gi, '<hr />');
+  
+  // Strip potentially invalid attributes or tags could be added here
+  // For now, we trust the input is reasonably clean HTML or text
+  
+  return clean;
+}
+
 export async function generateEpub(chapters: Chapter[], metadata: BookMetadata) {
   try {
     const zip = new JSZip();
     const date = new Date().toISOString().split('.')[0] + 'Z';
+    const uuid = crypto.randomUUID();
 
     // 1. mimetype (must be first, no compression)
     zip.file('mimetype', 'application/epub+zip', { compression: 'STORE' });
@@ -45,21 +85,26 @@ export async function generateEpub(chapters: Chapter[], metadata: BookMetadata) 
     // 4. Create HTML files for each chapter
     chapters.forEach((chapter, index) => {
       const filename = `chapter_${index + 1}.xhtml`;
+      // Sanitize and ensure valid XHTML
+      const safeContent = sanitizeContent(chapter.content);
+      const safeTitle = escapeXml(chapter.title);
+      
       const htmlContent = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="en">
 <head>
-  <title>${chapter.title}</title>
+  <title>${safeTitle}</title>
   <meta charset="UTF-8" />
   <style>
-    body { font-family: serif; line-height: 1.6; padding: 1em; }
-    h1 { text-align: center; margin-bottom: 2em; }
-    p { margin-bottom: 1em; }
+    body { font-family: serif; line-height: 1.6; padding: 1em; max-width: 100%; }
+    h1 { text-align: center; margin-bottom: 2em; page-break-after: avoid; }
+    p { margin-bottom: 1em; text-indent: 1.5em; margin-top: 0; }
+    img { max-width: 100%; height: auto; }
   </style>
 </head>
 <body>
-  <h1>${chapter.title}</h1>
-  ${chapter.content}
+  <h1>${safeTitle}</h1>
+  ${safeContent}
 </body>
 </html>`;
       oebps.file(filename, htmlContent);
@@ -81,10 +126,10 @@ export async function generateEpub(chapters: Chapter[], metadata: BookMetadata) 
     const opfContent = `<?xml version="1.0" encoding="UTF-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" unique-identifier="BookId" version="3.0">
   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
-    <dc:title>${metadata.title}</dc:title>
-    <dc:creator>${metadata.author}</dc:creator>
+    <dc:title>${escapeXml(metadata.title)}</dc:title>
+    <dc:creator>${escapeXml(metadata.author)}</dc:creator>
     <dc:language>en</dc:language>
-    <dc:identifier id="BookId">urn:uuid:${crypto.randomUUID()}</dc:identifier>
+    <dc:identifier id="BookId">urn:uuid:${uuid}</dc:identifier>
     <meta property="dcterms:modified">${date}</meta>
   </metadata>
   <manifest>
@@ -102,19 +147,19 @@ export async function generateEpub(chapters: Chapter[], metadata: BookMetadata) 
     // 6. toc.ncx (for older readers)
     const navPoints = chapters.map((c, i) => `
     <navPoint id="navPoint-${i + 1}" playOrder="${i + 1}">
-      <navLabel><text>${c.title}</text></navLabel>
+      <navLabel><text>${escapeXml(c.title)}</text></navLabel>
       <content src="chapter_${i + 1}.xhtml"/>
     </navPoint>`).join('');
 
     const ncxContent = `<?xml version="1.0" encoding="UTF-8"?>
 <ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
   <head>
-    <meta name="dtb:uid" content="urn:uuid:12345"/>
+    <meta name="dtb:uid" content="urn:uuid:${uuid}"/>
     <meta name="dtb:depth" content="1"/>
     <meta name="dtb:totalPageCount" content="0"/>
     <meta name="dtb:maxPageNumber" content="0"/>
   </head>
-  <docTitle><text>${metadata.title}</text></docTitle>
+  <docTitle><text>${escapeXml(metadata.title)}</text></docTitle>
   <navMap>
     ${navPoints}
   </navMap>
@@ -136,13 +181,18 @@ export async function generateEpub(chapters: Chapter[], metadata: BookMetadata) 
 // Real client-side fetch using a public CORS proxy
 export async function mockFetchUrl(url: string): Promise<{ title: string; content: string }> {
   try {
+    // Try primary proxy: allorigins
     // Using allorigins.win as a CORS proxy
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
     const response = await fetch(proxyUrl);
     
     if (!response.ok) throw new Error("Network response was not ok");
     
-    const html = await response.text();
+    const data = await response.json();
+    const html = data.contents; // allorigins returns JSON with contents field
+    
+    if (!html) throw new Error("No content returned");
+
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, "text/html");
 
@@ -158,6 +208,7 @@ export async function mockFetchUrl(url: string): Promise<{ title: string; conten
       '.user-content', // Generic
       '.chapter-content', // RoyalRoad
       '.story-text', // Fanfiction.net (might be blocked even with proxy)
+      'div[role="main"]',
       'article',
       'main',
       'body' // Fallback
@@ -174,7 +225,7 @@ export async function mockFetchUrl(url: string): Promise<{ title: string; conten
 
     let content = "";
     if (contentNode) {
-        // Extract paragraphs
+        // Extract paragraphs to ensure structure
         const paragraphs = contentNode.querySelectorAll('p');
         if (paragraphs.length > 0) {
             content = Array.from(paragraphs).map(p => `<p>${p.innerHTML}</p>`).join('\n');
@@ -188,7 +239,6 @@ export async function mockFetchUrl(url: string): Promise<{ title: string; conten
     }
 
     // Clean up content slightly
-    // Remove scripts and styles from the extracted string if they leaked in
     content = content.replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gm, "")
                      .replace(/<style\b[^>]*>([\s\S]*?)<\/style>/gm, "");
 
@@ -203,24 +253,10 @@ export async function mockFetchUrl(url: string): Promise<{ title: string; conten
 
   } catch (error) {
     console.error("Fetch error:", error);
-    // Fallback to the mock if real fetch fails (e.g. very strict sites)
-    // But user asked to fix it, so we throw error or return a "Manual Entry Required" message
-    // Better to return a helpful error state or a manual entry prompt
     
-    // For now, let's return a user-friendly mock that explains what happened
-    // This prevents the "always 97 words" confusion by being explicit
-    return {
-      title: "Connection Failed",
-      content: `
-        <p><strong>Could not fetch content from:</strong> ${url}</p>
-        <p>This might be due to:</p>
-        <ul>
-          <li>The site blocking automated access (Cloudflare, etc.)</li>
-          <li>CORS restrictions</li>
-          <li>Invalid URL</li>
-        </ul>
-        <p>Please try using the <strong>Manual Entry</strong> tab to copy-paste the content.</p>
-      `
-    };
+    // Specific error message for user
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    
+    throw new Error(`Connection Failed: ${errorMessage}. Try manual entry.`);
   }
 }

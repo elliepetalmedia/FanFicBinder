@@ -72,7 +72,7 @@ export default function Home() {
     const newChapter: Chapter = {
       id: Date.now().toString(),
       title: manualTitle,
-      content: manualContent.replace(/\n/g, "<br>"), // Simple formatting
+      content: manualContent.split('\n').filter(line => line.trim()).map(line => `<p>${line}</p>`).join(''), 
       wordCount: manualContent.split(/\s+/).length,
     };
 
