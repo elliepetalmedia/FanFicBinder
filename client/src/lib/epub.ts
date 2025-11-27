@@ -1,5 +1,6 @@
 import JSZip from 'jszip';
 import saveAs from 'file-saver';
+import { Readability } from '@mozilla/readability';
 
 export interface Chapter {
   id: string;
@@ -15,6 +16,7 @@ export interface BookMetadata {
 }
 
 function escapeXml(unsafe: string): string {
+  if (!unsafe) return "";
   return unsafe.replace(/[<>&'"]/g, (c) => {
     switch (c) {
       case '<': return '&lt;';
@@ -58,13 +60,6 @@ function sanitizeContent(content: string): string {
   clean = clean.replace(/&ldquo;/g, '&#8220;');
   clean = clean.replace(/&rdquo;/g, '&#8221;');
   clean = clean.replace(/&hellip;/g, '&#8230;');
-  
-  // Final safety: replace any remaining named entities (except xml predefined ones)
-  // This is a bit aggressive but safe for strictly parsed XML
-  // clean = clean.replace(/&([a-z0-9]+);/gi, (match, entity) => {
-  //   if (['lt', 'gt', 'amp', 'apos', 'quot'].includes(entity)) return match;
-  //   return ''; // strip unknown entities
-  // });
   
   return clean;
 }
@@ -194,88 +189,70 @@ export async function generateEpub(chapters: Chapter[], metadata: BookMetadata) 
   }
 }
 
-// Real client-side fetch using a public CORS proxy
-export async function mockFetchUrl(url: string): Promise<{ title: string; content: string }> {
+// Fetch with fallback proxies
+async function fetchWithFallback(url: string): Promise<string> {
+  const errors: string[] = [];
+
+  // Strategy 1: AllOrigins (JSONP-like CORS proxy)
   try {
-    // Try primary proxy: allorigins
-    // Using allorigins.win as a CORS proxy
     const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
     const response = await fetch(proxyUrl);
-    
-    if (!response.ok) throw new Error("Network response was not ok");
-    
+    if (!response.ok) throw new Error(`AllOrigins error: ${response.status}`);
     const data = await response.json();
-    const html = data.contents; // allorigins returns JSON with contents field
-    
-    if (!html) throw new Error("No content returned");
+    if (data.contents) return data.contents;
+    throw new Error("AllOrigins returned empty content");
+  } catch (e) {
+    errors.push((e as Error).message);
+  }
 
+  // Strategy 2: Corsproxy.io (Direct CORS proxy)
+  try {
+    // Note: corsproxy.io appends the URL directly
+    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+    const response = await fetch(proxyUrl);
+    if (!response.ok) throw new Error(`CorsProxy error: ${response.status}`);
+    const text = await response.text();
+    if (text) return text;
+    throw new Error("CorsProxy returned empty content");
+  } catch (e) {
+    errors.push((e as Error).message);
+  }
+  
+  throw new Error(`All proxies failed: ${errors.join(", ")}`);
+}
+
+export async function mockFetchUrl(url: string): Promise<{ title: string; content: string }> {
+  try {
+    // 1. Fetch HTML via proxy
+    const html = await fetchWithFallback(url);
+    
+    // 2. Parse HTML
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, "text/html");
-
-    // Basic heuristic to find content
-    const title = doc.querySelector('title')?.textContent || 
-                 doc.querySelector('h1')?.textContent || 
-                 "Unknown Chapter";
-
-    // Try to find the main content container
-    // Common selectors for story sites
-    const selectors = [
-      '#workskin', // AO3
-      '.user-content', // Generic
-      '.chapter-content', // RoyalRoad
-      '.story-text', // Fanfiction.net
-      '.text-content', 
-      'div[role="main"]',
-      'article',
-      'main',
-      '.post-body', // Blogger
-      '.entry-content', // WordPress
-      '.panel-reading', // Wattpad (often protected, but worth a try)
-      'pre', // Wattpad fallback sometimes
-      'body' // Fallback
-    ];
-
-    let contentNode = null;
-    for (const selector of selectors) {
-      const node = doc.querySelector(selector);
-      // Increased length check slightly, but kept reasonable
-      if (node && node.textContent && node.textContent.length > 200) {
-        contentNode = node;
-        break;
-      }
-    }
-
-    let content = "";
-    if (contentNode) {
-        // Extract paragraphs to ensure structure
-        const paragraphs = contentNode.querySelectorAll('p');
-        if (paragraphs.length > 0) {
-            content = Array.from(paragraphs).map(p => `<p>${p.innerHTML}</p>`).join('\n');
-        } else {
-            // Fallback to innerHTML if no paragraphs found
-            content = contentNode.innerHTML;
-        }
-    } else {
-       // Extreme fallback
-       content = "<p>Could not automatically extract content. Please copy/paste manually.</p>";
-    }
-
-    // Clean up content slightly
-    content = content.replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gm, "")
-                     .replace(/<style\b[^>]*>([\s\S]*?)<\/style>/gm, "");
-
-    if (!content || content.length < 50) {
-         throw new Error("No content found");
-    }
     
+    // Fix relative links before parsing
+    const base = doc.createElement('base');
+    base.href = url;
+    doc.head.appendChild(base);
+
+    // 3. Use Readability to extract content
+    // We clone the document because Readability mutates it
+    const reader = new Readability(doc.cloneNode(true) as Document);
+    const article = reader.parse();
+
+    if (!article || !article.content) {
+       throw new Error("Readability failed to parse content");
+    }
+
+    // 4. Post-processing
     // Check specifically for Wattpad blocking
-    if (url.includes('wattpad.com') && (content.includes('Log in') || content.includes('Sign up'))) {
+    if (url.includes('wattpad.com') && (article.content.includes('Log in') || article.content.includes('Sign up'))) {
          throw new Error("Wattpad content is protected. Please use Manual Entry.");
     }
 
     return {
-      title: title.trim(),
-      content: content
+      title: article.title || "Unknown Chapter",
+      content: article.content
     };
 
   } catch (error) {
