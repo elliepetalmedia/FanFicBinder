@@ -47,8 +47,24 @@ function sanitizeContent(content: string): string {
   clean = clean.replace(/<br>/gi, '<br />');
   clean = clean.replace(/<hr>/gi, '<hr />');
   
-  // Strip potentially invalid attributes or tags could be added here
-  // For now, we trust the input is reasonably clean HTML or text
+  // Replace named entities with numeric entities for strictly parsed XML
+  // This fixes the "undefined entity" error in many EPUB readers
+  clean = clean.replace(/&nbsp;/g, '&#160;');
+  clean = clean.replace(/&copy;/g, '&#169;');
+  clean = clean.replace(/&mdash;/g, '&#8212;');
+  clean = clean.replace(/&ndash;/g, '&#8211;');
+  clean = clean.replace(/&lsquo;/g, '&#8216;');
+  clean = clean.replace(/&rsquo;/g, '&#8217;');
+  clean = clean.replace(/&ldquo;/g, '&#8220;');
+  clean = clean.replace(/&rdquo;/g, '&#8221;');
+  clean = clean.replace(/&hellip;/g, '&#8230;');
+  
+  // Final safety: replace any remaining named entities (except xml predefined ones)
+  // This is a bit aggressive but safe for strictly parsed XML
+  // clean = clean.replace(/&([a-z0-9]+);/gi, (match, entity) => {
+  //   if (['lt', 'gt', 'amp', 'apos', 'quot'].includes(entity)) return match;
+  //   return ''; // strip unknown entities
+  // });
   
   return clean;
 }
@@ -207,17 +223,23 @@ export async function mockFetchUrl(url: string): Promise<{ title: string; conten
       '#workskin', // AO3
       '.user-content', // Generic
       '.chapter-content', // RoyalRoad
-      '.story-text', // Fanfiction.net (might be blocked even with proxy)
+      '.story-text', // Fanfiction.net
+      '.text-content', 
       'div[role="main"]',
       'article',
       'main',
+      '.post-body', // Blogger
+      '.entry-content', // WordPress
+      '.panel-reading', // Wattpad (often protected, but worth a try)
+      'pre', // Wattpad fallback sometimes
       'body' // Fallback
     ];
 
     let contentNode = null;
     for (const selector of selectors) {
       const node = doc.querySelector(selector);
-      if (node && node.textContent && node.textContent.length > 500) {
+      // Increased length check slightly, but kept reasonable
+      if (node && node.textContent && node.textContent.length > 200) {
         contentNode = node;
         break;
       }
@@ -245,6 +267,11 @@ export async function mockFetchUrl(url: string): Promise<{ title: string; conten
     if (!content || content.length < 50) {
          throw new Error("No content found");
     }
+    
+    // Check specifically for Wattpad blocking
+    if (url.includes('wattpad.com') && (content.includes('Log in') || content.includes('Sign up'))) {
+         throw new Error("Wattpad content is protected. Please use Manual Entry.");
+    }
 
     return {
       title: title.trim(),
@@ -256,6 +283,11 @@ export async function mockFetchUrl(url: string): Promise<{ title: string; conten
     
     // Specific error message for user
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    
+    // Custom message for Wattpad failures since they are common
+    if (url.includes('wattpad.com')) {
+        throw new Error(`Wattpad blocks external tools. Please open the chapter, copy the text, and use the "Manual" tab.`);
+    }
     
     throw new Error(`Connection Failed: ${errorMessage}. Try manual entry.`);
   }
