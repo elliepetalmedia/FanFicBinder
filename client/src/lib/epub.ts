@@ -49,8 +49,12 @@ function sanitizeContent(content: string): string {
   clean = clean.replace(/<br>/gi, '<br />');
   clean = clean.replace(/<hr>/gi, '<hr />');
   
+  // Fix nested block elements inside paragraphs (mismatched tag error)
+  // This is a common issue with Readability output where divs end up inside p tags
+  // We'll replace the outer p tags with divs if they contain block elements
+  clean = clean.replace(/<p>(.*?)<(div|p|h[1-6]|ul|ol|table)(.*?)<\/p>/gi, '<div>$1<$2$3</div>');
+
   // Replace named entities with numeric entities for strictly parsed XML
-  // This fixes the "undefined entity" error in many EPUB readers
   clean = clean.replace(/&nbsp;/g, '&#160;');
   clean = clean.replace(/&copy;/g, '&#169;');
   clean = clean.replace(/&mdash;/g, '&#8212;');
@@ -189,6 +193,17 @@ export async function generateEpub(chapters: Chapter[], metadata: BookMetadata) 
   }
 }
 
+// Retry logic wrapper
+async function retry<T>(fn: () => Promise<T>, retries = 3, delay = 1000): Promise<T> {
+  try {
+    return await fn();
+  } catch (error) {
+    if (retries <= 0) throw error;
+    await new Promise(resolve => setTimeout(resolve, delay));
+    return retry(fn, retries - 1, delay * 1.5); // Exponential backoff
+  }
+}
+
 // Fetch with fallback proxies
 async function fetchWithFallback(url: string): Promise<string> {
   const errors: string[] = [];
@@ -223,8 +238,8 @@ async function fetchWithFallback(url: string): Promise<string> {
 
 export async function mockFetchUrl(url: string): Promise<{ title: string; content: string }> {
   try {
-    // 1. Fetch HTML via proxy
-    const html = await fetchWithFallback(url);
+    // 1. Fetch HTML via proxy with retries
+    const html = await retry(() => fetchWithFallback(url));
     
     // 2. Parse HTML
     const parser = new DOMParser();
