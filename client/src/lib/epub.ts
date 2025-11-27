@@ -29,43 +29,65 @@ function escapeXml(unsafe: string): string {
   });
 }
 
-// Helper to ensure content is valid XHTML body content
+// Helper to ensure content is valid XHTML body content using DOM parser
 function sanitizeContent(content: string): string {
-  // Basic cleanup - ensure paragraphs
-  let clean = content;
-  
-  // If content has no tags, wrap paragraphs
-  if (!clean.includes('<p>') && !clean.includes('<div>')) {
-    clean = clean.split('\n').map(line => line.trim()).filter(line => line.length > 0).map(line => `<p>${line}</p>`).join('\n');
+  try {
+    // Use DOMParser to parse the HTML string
+    // This automatically handles tag closing and nesting better than regex
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(`<body>${content}</body>`, 'text/html');
+    
+    // Clean up the DOM
+    const body = doc.body;
+
+    // Remove unwanted elements
+    const unwantedSelectors = ['script', 'style', 'iframe', 'noscript', 'object', 'embed'];
+    unwantedSelectors.forEach(selector => {
+      const elements = body.querySelectorAll(selector);
+      elements.forEach(el => el.remove());
+    });
+
+    // Ensure images are proper
+    const images = body.querySelectorAll('img');
+    images.forEach(img => {
+        if (!img.hasAttribute('alt')) img.setAttribute('alt', '');
+    });
+    
+    // Serialize back to XML string
+    const serializer = new XMLSerializer();
+    // Serialize children of body to avoid including the body tag itself if we just want content
+    // But we need to handle the case where content might be text nodes mixed with elements
+    
+    let serialized = "";
+    // Iterate over child nodes to serialize them individually
+    Array.from(body.childNodes).forEach(node => {
+        serialized += serializer.serializeToString(node);
+    });
+    
+    // Fallback if serialization fails or returns empty
+    if (!serialized) {
+        // If content was text-only, it might have been parsed into body text content
+        serialized = escapeXml(body.textContent || "");
+        // Wrap in p if it's just text
+        if (serialized && !serialized.startsWith('<')) {
+            serialized = `<p>${serialized}</p>`;
+        }
+    }
+    
+    // If empty, return a non-breaking space paragraph
+    if (!serialized.trim()) {
+        return '<p>&#160;</p>';
+    }
+
+    return serialized;
+  } catch (e) {
+    console.error("Sanitization failed, falling back to basic cleanup", e);
+    // Fallback to basic cleanup if DOM parser fails (unlikely in browser)
+    let clean = content;
+    clean = clean.replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gim, "")
+                 .replace(/<style\b[^>]*>([\s\S]*?)<\/style>/gim, "");
+    return clean;
   }
-
-  // Remove scripts, styles, iframes
-  clean = clean.replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gim, "")
-               .replace(/<style\b[^>]*>([\s\S]*?)<\/style>/gim, "")
-               .replace(/<iframe\b[^>]*>([\s\S]*?)<\/iframe>/gim, "");
-
-  // Ensure images are closed properly for XHTML
-  clean = clean.replace(/<img([^>]+)>/gi, '<img$1 />');
-  clean = clean.replace(/<br>/gi, '<br />');
-  clean = clean.replace(/<hr>/gi, '<hr />');
-  
-  // Fix nested block elements inside paragraphs (mismatched tag error)
-  // This is a common issue with Readability output where divs end up inside p tags
-  // We'll replace the outer p tags with divs if they contain block elements
-  clean = clean.replace(/<p>(.*?)<(div|p|h[1-6]|ul|ol|table)(.*?)<\/p>/gi, '<div>$1<$2$3</div>');
-
-  // Replace named entities with numeric entities for strictly parsed XML
-  clean = clean.replace(/&nbsp;/g, '&#160;');
-  clean = clean.replace(/&copy;/g, '&#169;');
-  clean = clean.replace(/&mdash;/g, '&#8212;');
-  clean = clean.replace(/&ndash;/g, '&#8211;');
-  clean = clean.replace(/&lsquo;/g, '&#8216;');
-  clean = clean.replace(/&rsquo;/g, '&#8217;');
-  clean = clean.replace(/&ldquo;/g, '&#8220;');
-  clean = clean.replace(/&rdquo;/g, '&#8221;');
-  clean = clean.replace(/&hellip;/g, '&#8230;');
-  
-  return clean;
 }
 
 export async function generateEpub(chapters: Chapter[], metadata: BookMetadata) {
@@ -100,7 +122,7 @@ export async function generateEpub(chapters: Chapter[], metadata: BookMetadata) 
     // 4. Create HTML files for each chapter
     chapters.forEach((chapter, index) => {
       const filename = `chapter_${index + 1}.xhtml`;
-      // Sanitize and ensure valid XHTML
+      // Sanitize and ensure valid XHTML using DOMParser strategy
       const safeContent = sanitizeContent(chapter.content);
       const safeTitle = escapeXml(chapter.title);
       
@@ -115,6 +137,7 @@ export async function generateEpub(chapters: Chapter[], metadata: BookMetadata) 
     h1 { text-align: center; margin-bottom: 2em; page-break-after: avoid; }
     p { margin-bottom: 1em; text-indent: 1.5em; margin-top: 0; }
     img { max-width: 100%; height: auto; }
+    pre { white-space: pre-wrap; word-wrap: break-word; }
   </style>
 </head>
 <body>
