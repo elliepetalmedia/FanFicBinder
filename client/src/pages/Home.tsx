@@ -189,8 +189,13 @@ export default function Home() {
           {/* Left Column: Input Tools */}
           <div className="lg:col-span-1 space-y-6">
             <Card className="border-border shadow-lg bg-card">
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="font-serif text-xl">Add Content</CardTitle>
+                <Link href="/faq">
+                  <a className="text-xs text-primary hover:text-primary/80 transition-colors underline">
+                    FAQ
+                  </a>
+                </Link>
               </CardHeader>
               <CardContent>
                 <Tabs defaultValue="url" className="w-full">
