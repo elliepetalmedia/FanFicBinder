@@ -1,0 +1,36 @@
+Act as a Senior Frontend Developer. We are implementing two new "Premium" features for FanFicBinder. These run entirely client-side using the existing DOM structure.
+
+### FEATURE 1: TYPOGRAPHY PRE-FLIGHT (Custom CSS for EPUBs)
+**Goal:** Allow users to style their EPUB before downloading.
+
+**1. UI Changes (index.html):**
+- Add a "Formatting Options" accordion below the URL input.
+- Controls:
+  - **Font:** Dropdown [Serif (Merriweather), Sans-Serif (Open Sans), Dyslexic-Friendly].
+  - **Spacing:** Dropdown [Compact (1.2), Comfortable (1.6), Loose (1.8)].
+  - **Drop Caps:** Checkbox [Add Drop Caps to Chapter Start].
+
+**2. Logic (script.js - EPUB Generation):**
+- Create `generateCustomCSS(font, spacing, useDropCaps)`.
+- **Drop Cap Logic:** Use `p:first-of-type::first-letter { font-size: 3em; float: left; line-height: 0.8; }` to ensure compatibility.
+- **Injection:** Inject this CSS string into the EPUB's `stylesheet.css` or HTML `<head>` during generation.
+
+---
+
+### FEATURE 2: AUDIOBOOK MODE (HTML Export with Smart Player)
+**Goal:** Export a single HTML file that uses the browser's best TTS voices to read the story offline.
+
+**1. UI Changes:**
+- Add an "Output Format" toggle/dropdown: [EPUB (Default) | Audiobook (HTML)].
+
+**2. Logic (script.js - Audiobook Generation):**
+- Create `generateAudiobookHTML(chapters, metadata)`.
+- Combine all chapters into one HTML file.
+- **Inject this specific 'Smart Player' script into the footer of the generated HTML:**
+  - **Voice Selection Logic:** On load, run `speechSynthesis.getVoices()`. Filter the list to prioritize voices with "Google", "Siri", or "Premium" in their name. Default to these over standard "Microsoft" voices.
+  - **The Player UI:** A sticky bottom bar with Play/Pause, Speed (0.8x - 2x), and a "Voice" dropdown so the user can swap voices manually.
+  - **Auto-Scroll:** When reading a paragraph, scroll it into view and highlight it (add a CSS class `.reading-now { background: #fdf6e3; }`).
+  - **Progress Saving:** Save the current chapter/paragraph index to `localStorage` so they can resume listening if they close the file.
+
+**3. Execution:**
+- If "Audiobook" is selected, trigger this function and download `<Title>.html`.

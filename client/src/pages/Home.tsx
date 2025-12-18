@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { generateEpub, mockFetchUrl, type Chapter } from "@/lib/epub";
+import { generateEpub, generateAudiobookHTML, mockFetchUrl, type Chapter } from "@/lib/epub";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,7 +17,10 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Link } from "wouter";
-import { Book, Download, Trash2, Plus, Link as LinkIcon, FileText, Loader2, Image as ImageIcon, X } from "lucide-react";
+import { Book, Download, Trash2, Plus, Link as LinkIcon, FileText, Loader2, Image as ImageIcon, X, Settings, Headphones } from "lucide-react";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function Home() {
   const { toast } = useToast();
@@ -35,6 +38,12 @@ export default function Home() {
   const [authorName, setAuthorName] = useState("Various Authors");
   const [coverImage, setCoverImage] = useState<ArrayBuffer | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
+
+  // Formatting State
+  const [font, setFont] = useState("serif");
+  const [spacing, setSpacing] = useState("1.6");
+  const [dropCaps, setDropCaps] = useState(false);
+  const [outputFormat, setOutputFormat] = useState<"epub" | "audiobook">("epub");
 
   const handleFetchUrl = async () => {
     if (!urlInput) return;
@@ -101,19 +110,35 @@ export default function Home() {
     }
 
     try {
-      await generateEpub(chapters, { 
-        title: bookTitle, 
-        author: authorName,
-        cover: coverImage
-      });
-      toast({
-        title: "Download Started",
-        description: "Your EPUB is being generated.",
-      });
+      if (outputFormat === 'audiobook') {
+        await generateAudiobookHTML(chapters, {
+          title: bookTitle,
+          author: authorName,
+          cover: coverImage
+        });
+        toast({
+          title: "Audiobook Ready",
+          description: "Your HTML audiobook has been generated.",
+        });
+      } else {
+        await generateEpub(chapters, { 
+          title: bookTitle, 
+          author: authorName,
+          cover: coverImage
+        }, {
+          font,
+          spacing,
+          dropCaps
+        });
+        toast({
+          title: "Download Started",
+          description: "Your EPUB is being generated.",
+        });
+      }
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to generate EPUB.",
+        description: "Failed to generate file.",
         variant: "destructive",
       });
     }
@@ -220,6 +245,58 @@ export default function Home() {
                         Supports AO3, Wattpad, RoyalRoad, and most article sites.
                       </p>
                     </div>
+
+                    <Accordion type="single" collapsible className="w-full border rounded-md px-3 bg-secondary/10">
+                      <AccordionItem value="formatting" className="border-none">
+                        <AccordionTrigger className="text-sm py-3 font-medium hover:no-underline">
+                          <span className="flex items-center gap-2">
+                            <Settings className="w-4 h-4" />
+                            Formatting Options
+                          </span>
+                        </AccordionTrigger>
+                        <AccordionContent className="space-y-4 pt-2">
+                          <div className="grid gap-2">
+                            <Label htmlFor="font-select">Font Family</Label>
+                            <Select value={font} onValueChange={setFont}>
+                              <SelectTrigger id="font-select">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="serif">Serif (Merriweather)</SelectItem>
+                                <SelectItem value="sans">Sans-Serif (Open Sans)</SelectItem>
+                                <SelectItem value="dyslexic">Dyslexic Friendly</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          <div className="grid gap-2">
+                            <Label htmlFor="spacing-select">Line Spacing</Label>
+                            <Select value={spacing} onValueChange={setSpacing}>
+                              <SelectTrigger id="spacing-select">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="1.2">Compact (1.2)</SelectItem>
+                                <SelectItem value="1.6">Comfortable (1.6)</SelectItem>
+                                <SelectItem value="1.8">Loose (1.8)</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="flex items-center space-x-2 pt-2">
+                            <Checkbox 
+                              id="dropcaps" 
+                              checked={dropCaps} 
+                              onCheckedChange={(checked) => setDropCaps(checked === true)} 
+                            />
+                            <Label htmlFor="dropcaps" className="font-normal cursor-pointer">
+                              Add Drop Caps to Chapter Start
+                            </Label>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
+
                     <Button 
                       onClick={handleFetchUrl} 
                       disabled={isLoading || !urlInput} 
@@ -405,14 +482,35 @@ export default function Home() {
                 )}
               </CardContent>
               {chapters.length > 0 && (
-                <div className="p-4 border-t border-border bg-card rounded-b-lg hidden lg:block">
+                <div className="p-4 border-t border-border bg-card rounded-b-lg hidden lg:block space-y-4">
+                  
+                  {/* Output Format Selector */}
+                  <div className="flex justify-center">
+                    <div className="bg-secondary/20 p-1 rounded-lg inline-flex">
+                      <button
+                        onClick={() => setOutputFormat('epub')}
+                        className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${outputFormat === 'epub' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                      >
+                        <Book className="w-4 h-4" />
+                        EPUB
+                      </button>
+                      <button
+                        onClick={() => setOutputFormat('audiobook')}
+                        className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${outputFormat === 'audiobook' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                      >
+                        <Headphones className="w-4 h-4" />
+                        Audiobook (HTML)
+                      </button>
+                    </div>
+                  </div>
+
                   <Button 
                     size="lg" 
                     className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold shadow-lg shadow-primary/20"
                     onClick={handleDownload}
                   >
                     <Download className="mr-2 h-5 w-5" />
-                    Download EPUB ({chapters.reduce((acc, c) => acc + c.wordCount, 0).toLocaleString()} words)
+                    Download {outputFormat === 'epub' ? 'EPUB' : 'Audiobook'} ({chapters.reduce((acc, c) => acc + c.wordCount, 0).toLocaleString()} words)
                   </Button>
                 </div>
               )}
@@ -422,14 +520,32 @@ export default function Home() {
         
         {/* Mobile Sticky Download Button */}
         {chapters.length > 0 && (
-          <div className="fixed bottom-0 left-0 right-0 p-4 bg-card border-t border-border lg:hidden z-50 shadow-xl">
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-card border-t border-border lg:hidden z-50 shadow-xl space-y-3">
+             <div className="flex justify-center">
+                <div className="bg-secondary/20 p-1 rounded-lg inline-flex w-full">
+                  <button
+                    onClick={() => setOutputFormat('epub')}
+                    className={`flex-1 px-4 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2 ${outputFormat === 'epub' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                  >
+                    <Book className="w-4 h-4" />
+                    EPUB
+                  </button>
+                  <button
+                    onClick={() => setOutputFormat('audiobook')}
+                    className={`flex-1 px-4 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2 ${outputFormat === 'audiobook' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                  >
+                    <Headphones className="w-4 h-4" />
+                    Audio
+                  </button>
+                </div>
+              </div>
             <Button 
               size="lg" 
               className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold shadow-lg shadow-primary/20"
               onClick={handleDownload}
             >
               <Download className="mr-2 h-5 w-5" />
-              Download EPUB ({chapters.reduce((acc, c) => acc + c.wordCount, 0).toLocaleString()} words)
+              Download {outputFormat === 'epub' ? 'EPUB' : 'Audiobook'}
             </Button>
           </div>
         )}

@@ -90,11 +90,237 @@ function sanitizeContent(content: string): string {
   }
 }
 
-export async function generateEpub(chapters: Chapter[], metadata: BookMetadata) {
+export interface ExportOptions {
+  font?: string;
+  spacing?: string;
+  dropCaps?: boolean;
+}
+
+function generateCustomCSS(options: ExportOptions): string {
+  let css = `
+    body { 
+      font-family: ${options.font === 'sans' ? 'sans-serif' : options.font === 'dyslexic' ? 'OpenDyslexic, sans-serif' : 'serif'}; 
+      line-height: ${options.spacing || '1.6'}; 
+      padding: 1em; 
+      max-width: 100%; 
+    }
+    h1 { text-align: center; margin-bottom: 2em; page-break-after: avoid; }
+    p { margin-bottom: 1em; text-indent: 1.5em; margin-top: 0; }
+    img { max-width: 100%; height: auto; }
+    pre { white-space: pre-wrap; word-wrap: break-word; }
+  `;
+
+  if (options.dropCaps) {
+    css += `
+      p:first-of-type::first-letter { 
+        font-size: 3em; 
+        float: left; 
+        line-height: 0.8; 
+        padding-right: 0.1em;
+      }
+    `;
+  }
+
+  return css;
+}
+
+export async function generateAudiobookHTML(chapters: Chapter[], metadata: BookMetadata) {
+  try {
+    const combinedContent = chapters.map(c => `
+      <article class="chapter" data-title="${escapeXml(c.title)}">
+        <h2>${escapeXml(c.title)}</h2>
+        ${sanitizeContent(c.content)}
+      </article>
+    `).join('\n<hr/>\n');
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeXml(metadata.title)} - Audiobook</title>
+  <style>
+    body { font-family: system-ui, sans-serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 20px; padding-bottom: 120px; background: #fdf6e3; color: #333; }
+    h1 { text-align: center; color: #2c3e50; }
+    h2 { border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 40px; }
+    p { margin-bottom: 1.2em; transition: background 0.3s; padding: 5px; border-radius: 4px; }
+    .reading-now { background: #ffe0b2; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    
+    /* Player UI */
+    #audio-player {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: #fff; border-top: 1px solid #ddd;
+      padding: 15px; box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+      display: flex; gap: 15px; align-items: center; justify-content: center;
+      flex-wrap: wrap; z-index: 1000;
+    }
+    button {
+      background: #ff9f0a; color: white; border: none; padding: 10px 20px;
+      border-radius: 20px; cursor: pointer; font-weight: bold;
+      display: flex; align-items: center; gap: 5px;
+    }
+    button:hover { background: #e08900; }
+    button:disabled { background: #ccc; cursor: not-allowed; }
+    select { padding: 8px; border-radius: 5px; border: 1px solid #ccc; max-width: 200px; }
+    .controls { display: flex; gap: 10px; align-items: center; }
+    .progress { flex: 1; text-align: center; font-size: 0.9em; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  </style>
+</head>
+<body>
+  <h1>${escapeXml(metadata.title)}</h1>
+  <div id="content">
+    ${combinedContent}
+  </div>
+
+  <div id="audio-player">
+    <div class="controls">
+      <button id="play-btn">Play</button>
+      <select id="voice-select"><option>Loading voices...</option></select>
+      <select id="speed-select">
+        <option value="0.8">0.8x</option>
+        <option value="1" selected>1.0x</option>
+        <option value="1.2">1.2x</option>
+        <option value="1.5">1.5x</option>
+        <option value="2">2.0x</option>
+      </select>
+    </div>
+    <div class="progress" id="status-text">Ready to read</div>
+  </div>
+
+  <script>
+    const synth = window.speechSynthesis;
+    let voices = [];
+    let currentUtterance = null;
+    let isPlaying = false;
+    let paragraphs = Array.from(document.querySelectorAll('p'));
+    let currentIndex = 0;
+    
+    // Load Saved Progress
+    const savedIndex = localStorage.getItem('audiobook_progress_${escapeXml(metadata.title)}');
+    if (savedIndex) {
+      currentIndex = parseInt(savedIndex, 10);
+      highlightParagraph(currentIndex);
+    }
+
+    function loadVoices() {
+      voices = synth.getVoices().sort((a, b) => {
+        const aScore = (a.name.includes('Google') || a.name.includes('Premium')) ? 2 : 1;
+        const bScore = (b.name.includes('Google') || b.name.includes('Premium')) ? 2 : 1;
+        return bScore - aScore;
+      });
+      
+      const select = document.getElementById('voice-select');
+      select.innerHTML = '';
+      voices.forEach((voice, i) => {
+        const option = document.createElement('option');
+        option.value = i;
+        option.textContent = voice.name + ' (' + voice.lang + ')';
+        select.appendChild(option);
+      });
+    }
+
+    loadVoices();
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+      speechSynthesis.onvoiceschanged = loadVoices;
+    }
+
+    function highlightParagraph(index) {
+      paragraphs.forEach(p => p.classList.remove('reading-now'));
+      if (paragraphs[index]) {
+        paragraphs[index].classList.add('reading-now');
+        paragraphs[index].scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+
+    function speak(index) {
+      if (index >= paragraphs.length) {
+        isPlaying = false;
+        updateButton();
+        return;
+      }
+      
+      synth.cancel();
+      currentIndex = index;
+      localStorage.setItem('audiobook_progress_${escapeXml(metadata.title)}', currentIndex);
+      highlightParagraph(index);
+      
+      const text = paragraphs[index].innerText;
+      const utterance = new SpeechSynthesisUtterance(text);
+      
+      const voiceIndex = document.getElementById('voice-select').value;
+      if (voices[voiceIndex]) utterance.voice = voices[voiceIndex];
+      
+      utterance.rate = parseFloat(document.getElementById('speed-select').value);
+      
+      utterance.onend = () => {
+        if (isPlaying) {
+          speak(currentIndex + 1);
+        }
+      };
+      
+      utterance.onerror = (e) => {
+        console.error('Speech error', e);
+        isPlaying = false;
+        updateButton();
+      };
+
+      currentUtterance = utterance;
+      synth.speak(utterance);
+      
+      document.getElementById('status-text').innerText = 'Reading paragraph ' + (index + 1) + ' of ' + paragraphs.length;
+    }
+
+    function updateButton() {
+      document.getElementById('play-btn').textContent = isPlaying ? 'Pause' : 'Play';
+    }
+
+    document.getElementById('play-btn').onclick = () => {
+      if (isPlaying) {
+        synth.cancel();
+        isPlaying = false;
+      } else {
+        isPlaying = true;
+        speak(currentIndex);
+      }
+      updateButton();
+    };
+    
+    // Allow clicking paragraphs to jump
+    paragraphs.forEach((p, i) => {
+      p.style.cursor = 'pointer';
+      p.onclick = () => {
+        isPlaying = true;
+        updateButton();
+        speak(i);
+      };
+    });
+
+    // Handle speed change
+    document.getElementById('speed-select').onchange = () => {
+      if (isPlaying) {
+        synth.cancel();
+        speak(currentIndex);
+      }
+    };
+  </script>
+</body>
+</html>`;
+
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    saveAs(blob, `${metadata.title.replace(/[^a-z0-9]/gi, '_')}.html`);
+    return true;
+  } catch (error) {
+    console.error("Error generating Audiobook:", error);
+    throw new Error("Failed to generate Audiobook HTML");
+  }
+}
+
+export async function generateEpub(chapters: Chapter[], metadata: BookMetadata, options?: ExportOptions) {
   try {
     const zip = new JSZip();
     const date = new Date().toISOString().split('.')[0] + 'Z';
     const uuid = crypto.randomUUID();
+    const cssContent = generateCustomCSS(options || {});
 
     // 1. mimetype (must be first, no compression)
     zip.file('mimetype', 'application/epub+zip', { compression: 'STORE' });
@@ -133,11 +359,7 @@ export async function generateEpub(chapters: Chapter[], metadata: BookMetadata) 
   <title>${safeTitle}</title>
   <meta charset="UTF-8" />
   <style>
-    body { font-family: serif; line-height: 1.6; padding: 1em; max-width: 100%; }
-    h1 { text-align: center; margin-bottom: 2em; page-break-after: avoid; }
-    p { margin-bottom: 1em; text-indent: 1.5em; margin-top: 0; }
-    img { max-width: 100%; height: auto; }
-    pre { white-space: pre-wrap; word-wrap: break-word; }
+    ${cssContent}
   </style>
 </head>
 <body>
