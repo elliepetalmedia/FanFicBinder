@@ -35,22 +35,50 @@ export default function FAQ() {
 
           {/* Fetching URLs */}
           <section className="space-y-3">
-            <h3 className="text-xl font-bold font-serif text-foreground">How do I fetch chapters from a URL?</h3>
+            <h3 className="text-xl font-bold font-serif text-foreground">How do I fetch chapters?</h3>
             <div className="space-y-2 text-foreground/90">
               <p>
-                1. Copy the URL of the story chapter or article you want to save.
+                1. <strong>Single Chapter:</strong> Paste the URL and click "Fetch Chapter".
               </p>
               <p>
-                2. On the main page, paste the URL into the "Story URL" field in the "Add Content" section.
-              </p>
-              <p>
-                3. Click "Fetch Chapter" and wait for the content to load.
-              </p>
-              <p>
-                4. If fetching fails, don't worry—just try again. Some sites require multiple attempts due to network issues. If it keeps failing, use the Manual Entry method instead.
+                2. <strong>Multiple Chapters (Sequence):</strong> Check the "Try to fetch following chapters automatically" box. We'll grab the first chapter, look for a "Next" link, and keep going until we hit a limit or the end.
               </p>
               <p className="text-sm text-muted-foreground italic">
-                Note: FanFicBinder supports AO3, RoyalRoad, and most article sites. Some sites like Wattpad block automated fetching—use Manual Entry for these.
+                Note: Sequence fetching adds a polite 1.5-second delay between requests to respect the source site's servers. It works best on AO3 and RoyalRoad.
+              </p>
+            </div>
+          </section>
+
+          {/* Formatting */}
+          <section className="space-y-3">
+            <h3 className="text-xl font-bold font-serif text-foreground">Can I change the font or layout?</h3>
+            <div className="space-y-2 text-foreground/90">
+              <p>
+                Yes! Click the "Formatting Options" accordion to reveal settings for:
+              </p>
+              <ul className="list-disc pl-6 space-y-1">
+                <li><strong>Font:</strong> Choose Serif (Merriweather), Sans-Serif, or Dyslexic-Friendly.</li>
+                <li><strong>Spacing:</strong> Adjust line height for comfortable reading.</li>
+                <li><strong>Drop Caps:</strong> Add a stylish large letter to the start of each chapter.</li>
+              </ul>
+              <p>
+                These settings are baked into the EPUB css, so they should work on most e-readers.
+              </p>
+            </div>
+          </section>
+
+          {/* Audiobook */}
+          <section className="space-y-3">
+            <h3 className="text-xl font-bold font-serif text-foreground">What is Audiobook Mode?</h3>
+            <div className="space-y-2 text-foreground/90">
+              <p>
+                Instead of an EPUB, you can download a single HTML file designed for listening.
+              </p>
+              <p>
+                Open this file in any browser (Safari on iPhone or Chrome on Android recommended). It uses your device's built-in "Premium" text-to-speech voices to read the story to you.
+              </p>
+              <p>
+                It features auto-scrolling, speed control, and it remembers your progress even if you close the browser.
               </p>
             </div>
           </section>

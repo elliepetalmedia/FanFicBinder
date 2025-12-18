@@ -683,7 +683,13 @@ export default function Home() {
 
             <h3 className="text-xl font-bold text-foreground mb-3">How it Works</h3>
             <p className="leading-relaxed mb-4">
-              Most fanfiction sites are designed for browsers, not e-readers. We use Mozilla's advanced "Readability" engine to strip away the sidebars, ads, and comments, leaving only the story text. We then package it into a valid EPUB file compatible with:
+              Most fanfiction sites are designed for browsers, not e-readers. We use Mozilla's advanced "Readability" engine to strip away the sidebars, ads, and comments, leaving only the story text. We then package it into a valid EPUB file.
+            </p>
+            <p className="leading-relaxed mb-4">
+               <strong>New!</strong> Use our "Sequence Fetching" to automatically grab multiple chapters in a row from AO3 or RoyalRoad. Just check the box and watch it go.
+            </p>
+            <p className="leading-relaxed mb-4">
+               <strong>Audiobook Mode:</strong> Prefer listening? Export your binder as a smart HTML Audiobook. Open the file on your phone, and it will use your device's high-quality text-to-speech voices to read to you offline, complete with auto-scrolling and progress saving.
             </p>
             <ul className="list-disc pl-6 space-y-2 mb-6">
               <li>Amazon Kindle (via Send-to-Kindle)</li>
@@ -697,10 +703,7 @@ export default function Home() {
             </p>
           </div>
           
-          {/* Ad Slots placeholders */}
-          <div id="ad-footer" className="w-full h-24 bg-secondary/30 rounded flex items-center justify-center text-xs text-muted-foreground">
-            Ad Space
-          </div>
+          {/* Ad Slots removed */}
         </article>
       </main>
 
