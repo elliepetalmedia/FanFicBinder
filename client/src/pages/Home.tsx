@@ -45,8 +45,18 @@ export default function Home() {
   const [dropCaps, setDropCaps] = useState(false);
   const [outputFormat, setOutputFormat] = useState<"epub" | "audiobook">("epub");
 
+  const [isMultiChapter, setIsMultiChapter] = useState(false);
+  const [fetchProgress, setFetchProgress] = useState<{ current: number; total: string }>({ current: 0, total: "?" });
+  const [isFetchingSequence, setIsFetchingSequence] = useState(false);
+  const [abortController, setAbortController] = useState<AbortController | null>(null);
+
   const handleFetchUrl = async () => {
     if (!urlInput) return;
+
+    if (isMultiChapter) {
+        handleFetchSequence();
+        return;
+    }
 
     setIsLoading(true);
     try {
@@ -72,6 +82,88 @@ export default function Home() {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleFetchSequence = async () => {
+    if (!urlInput) return;
+
+    setIsFetchingSequence(true);
+    setFetchProgress({ current: 0, total: "?" });
+    const controller = new AbortController();
+    setAbortController(controller);
+
+    let currentUrl = urlInput;
+    let chapterCount = 0;
+    
+    try {
+        while (currentUrl && !controller.signal.aborted) {
+            chapterCount++;
+            setFetchProgress(prev => ({ ...prev, current: chapterCount }));
+            
+            // 1. Fetch
+            const result = await mockFetchUrl(currentUrl);
+            
+            // 2. Add to list
+            const newChapter: Chapter = {
+                id: Date.now().toString() + Math.random(),
+                title: result.title,
+                content: result.content,
+                wordCount: result.content.split(/\s+/).length,
+            };
+            
+            setChapters(prev => [...prev, newChapter]); // Functional update to ensure fresh state
+            
+            // 3. Check for next
+            if (result.nextUrl && result.nextUrl !== currentUrl) {
+                currentUrl = result.nextUrl;
+                // 4. Polite delay
+                await new Promise(resolve => setTimeout(resolve, 1500)); 
+            } else {
+                currentUrl = "";
+            }
+
+            // Safety break
+            if (chapterCount > 50) {
+                 toast({
+                    title: "Sequence Limit Reached",
+                    description: "Stopped after 50 chapters to prevent browser issues.",
+                    variant: "default",
+                  });
+                break;
+            }
+        }
+        
+        if (!controller.signal.aborted) {
+            toast({
+                title: "Sequence Complete",
+                description: `Fetched ${chapterCount} chapters.`,
+            });
+            setUrlInput("");
+        }
+
+    } catch (error) {
+         if (!controller.signal.aborted) {
+            toast({
+                title: "Sequence Interrupted",
+                description: "Failed to fetch a chapter. Stopping sequence.",
+                variant: "destructive",
+            });
+         }
+    } finally {
+        setIsFetchingSequence(false);
+        setAbortController(null);
+    }
+  };
+
+  const cancelFetch = () => {
+    if (abortController) {
+        abortController.abort();
+        setIsFetchingSequence(false);
+        toast({
+            title: "Stopped",
+            description: "Fetching sequence cancelled.",
+        });
     }
   };
 
@@ -244,6 +336,17 @@ export default function Home() {
                       <p className="text-xs text-muted-foreground">
                         Supports AO3, Wattpad, RoyalRoad, and most article sites.
                       </p>
+                      <div className="flex items-center space-x-2 pt-1">
+                        <Checkbox 
+                          id="multi-chapter" 
+                          checked={isMultiChapter}
+                          onCheckedChange={(checked) => setIsMultiChapter(checked === true)}
+                          disabled={isFetchingSequence}
+                        />
+                        <Label htmlFor="multi-chapter" className="text-xs font-normal cursor-pointer">
+                          Try to fetch following chapters automatically
+                        </Label>
+                      </div>
                     </div>
 
                     <Accordion type="single" collapsible className="w-full border rounded-md px-3 bg-secondary/10">
@@ -297,23 +400,34 @@ export default function Home() {
                       </AccordionItem>
                     </Accordion>
 
-                    <Button 
-                      onClick={handleFetchUrl} 
-                      disabled={isLoading || !urlInput} 
-                      className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-                    >
-                      {isLoading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Fetching...
-                        </>
-                      ) : (
-                        <>
-                          <LinkIcon className="mr-2 h-4 w-4" />
-                          Fetch Chapter
-                        </>
-                      )}
-                    </Button>
+                    {isFetchingSequence ? (
+                         <Button 
+                          onClick={cancelFetch} 
+                          variant="destructive"
+                          className="w-full"
+                        >
+                          <X className="mr-2 h-4 w-4" />
+                          Stop Fetching (Chapter {fetchProgress.current})
+                        </Button>
+                    ) : (
+                        <Button 
+                          onClick={handleFetchUrl} 
+                          disabled={isLoading || !urlInput} 
+                          className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                        >
+                          {isLoading ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Fetching...
+                            </>
+                          ) : (
+                            <>
+                              <LinkIcon className="mr-2 h-4 w-4" />
+                              {isMultiChapter ? 'Start Chapter Fetch Sequence' : 'Fetch Chapter'}
+                            </>
+                          )}
+                        </Button>
+                    )}
                   </TabsContent>
                   
                   <TabsContent value="manual" className="space-y-4">

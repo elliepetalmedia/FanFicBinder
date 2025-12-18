@@ -481,7 +481,7 @@ async function fetchWithFallback(url: string): Promise<string> {
   throw new Error(`All proxies failed: ${errors.join(", ")}`);
 }
 
-export async function mockFetchUrl(url: string): Promise<{ title: string; content: string }> {
+export async function mockFetchUrl(url: string): Promise<{ title: string; content: string; nextUrl?: string | null }> {
   try {
     // 1. Fetch HTML via proxy with retries
     const html = await retry(() => fetchWithFallback(url));
@@ -509,10 +509,35 @@ export async function mockFetchUrl(url: string): Promise<{ title: string; conten
     if (url.includes('wattpad.com') && (article.content.includes('Log in') || article.content.includes('Sign up'))) {
          throw new Error("Wattpad content is protected. Please use Manual Entry.");
     }
+    
+    // Find Next Chapter Link
+    // Heuristic: Look for links with text "Next", "Next Chapter", or ">" in navigation areas
+    let nextUrl: string | null = null;
+    const links = Array.from(doc.querySelectorAll('a'));
+    for (const link of links) {
+        const text = (link.textContent || "").trim().toLowerCase();
+        if (text === "next" || text === "next chapter" || text === "next >" || text === ">") {
+            nextUrl = link.href;
+            break;
+        }
+        
+        // AO3 Specific
+        if (url.includes('archiveofourown.org') && link.classList.contains('next')) {
+            nextUrl = link.href;
+            break;
+        }
+
+        // RoyalRoad Specific
+        if (url.includes('royalroad.com') && text.includes('next chapter')) {
+            nextUrl = link.href;
+            break;
+        }
+    }
 
     return {
       title: article.title || "Unknown Chapter",
-      content: article.content
+      content: article.content,
+      nextUrl: nextUrl
     };
 
   } catch (error) {
