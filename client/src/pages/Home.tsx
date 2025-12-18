@@ -485,22 +485,25 @@ export default function Home() {
                 <div className="p-4 border-t border-border bg-card rounded-b-lg hidden lg:block space-y-4">
                   
                   {/* Output Format Selector */}
-                  <div className="flex flex-col items-center gap-2">
-                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Choose Output Format:</span>
-                    <div className="bg-secondary/20 p-1 rounded-lg inline-flex">
+                  <div className="flex flex-col items-center gap-3">
+                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Choose Output Format:</span>
+                    <div className="bg-secondary/20 p-1.5 rounded-xl flex flex-col sm:flex-row gap-1 w-full sm:w-auto">
                       <button
                         onClick={() => setOutputFormat('epub')}
-                        className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${outputFormat === 'epub' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                        className={`px-6 py-3 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 flex-1 sm:flex-none ${outputFormat === 'epub' ? 'bg-background shadow-md text-primary scale-[1.02]' : 'text-muted-foreground hover:text-foreground hover:bg-background/50'}`}
                       >
-                        <Book className="w-4 h-4" />
+                        <Book className="w-5 h-5" />
                         EPUB
                       </button>
                       <button
                         onClick={() => setOutputFormat('audiobook')}
-                        className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${outputFormat === 'audiobook' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                        className={`px-6 py-3 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 flex-1 sm:flex-none ${outputFormat === 'audiobook' ? 'bg-background shadow-md text-primary scale-[1.02]' : 'text-muted-foreground hover:text-foreground hover:bg-background/50'}`}
                       >
-                        <Headphones className="w-4 h-4" />
-                        Audiobook (HTML Best for iPhone/Android Voices)
+                        <Headphones className="w-5 h-5" />
+                        <span className="flex flex-col items-start text-left leading-tight">
+                          <span>Audiobook (HTML)</span>
+                          <span className="text-[10px] opacity-70 font-normal">Best for iPhone/Android Voices</span>
+                        </span>
                       </button>
                     </div>
                   </div>
@@ -521,23 +524,26 @@ export default function Home() {
         
         {/* Mobile Sticky Download Button */}
         {chapters.length > 0 && (
-          <div className="fixed bottom-0 left-0 right-0 p-4 bg-card border-t border-border lg:hidden z-50 shadow-xl space-y-3">
-             <div className="flex flex-col items-center gap-2">
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Choose Output Format:</span>
-                <div className="bg-secondary/20 p-1 rounded-lg inline-flex w-full">
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-card border-t border-border lg:hidden z-50 shadow-xl space-y-4 pb-8">
+             <div className="flex flex-col items-center gap-3">
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Choose Output Format:</span>
+                <div className="bg-secondary/20 p-1.5 rounded-xl flex gap-1 w-full">
                   <button
                     onClick={() => setOutputFormat('epub')}
-                    className={`flex-1 px-4 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2 ${outputFormat === 'epub' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                    className={`flex-1 px-4 py-3 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${outputFormat === 'epub' ? 'bg-background shadow-md text-primary scale-[1.02]' : 'text-muted-foreground hover:text-foreground hover:bg-background/50'}`}
                   >
-                    <Book className="w-4 h-4" />
+                    <Book className="w-5 h-5" />
                     EPUB
                   </button>
                   <button
                     onClick={() => setOutputFormat('audiobook')}
-                    className={`flex-1 px-4 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2 ${outputFormat === 'audiobook' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                    className={`flex-[2] px-4 py-3 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${outputFormat === 'audiobook' ? 'bg-background shadow-md text-primary scale-[1.02]' : 'text-muted-foreground hover:text-foreground hover:bg-background/50'}`}
                   >
-                    <Headphones className="w-4 h-4" />
-                    Audiobook (HTML Best for iPhone/Android Voices)
+                    <Headphones className="w-5 h-5 flex-shrink-0" />
+                    <span className="flex flex-col items-start text-left leading-tight overflow-hidden">
+                      <span className="truncate w-full">Audiobook</span>
+                      <span className="text-[10px] opacity-70 font-normal truncate w-full">Best for Mobile Voices</span>
+                    </span>
                   </button>
                 </div>
               </div>
