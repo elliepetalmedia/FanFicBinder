@@ -485,7 +485,8 @@ export default function Home() {
                 <div className="p-4 border-t border-border bg-card rounded-b-lg hidden lg:block space-y-4">
                   
                   {/* Output Format Selector */}
-                  <div className="flex justify-center">
+                  <div className="flex flex-col items-center gap-2">
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Choose Output Format:</span>
                     <div className="bg-secondary/20 p-1 rounded-lg inline-flex">
                       <button
                         onClick={() => setOutputFormat('epub')}
@@ -499,7 +500,7 @@ export default function Home() {
                         className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${outputFormat === 'audiobook' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                       >
                         <Headphones className="w-4 h-4" />
-                        Audiobook (HTML)
+                        Audiobook (HTML Best for iPhone/Android Voices)
                       </button>
                     </div>
                   </div>
@@ -521,7 +522,8 @@ export default function Home() {
         {/* Mobile Sticky Download Button */}
         {chapters.length > 0 && (
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-card border-t border-border lg:hidden z-50 shadow-xl space-y-3">
-             <div className="flex justify-center">
+             <div className="flex flex-col items-center gap-2">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Choose Output Format:</span>
                 <div className="bg-secondary/20 p-1 rounded-lg inline-flex w-full">
                   <button
                     onClick={() => setOutputFormat('epub')}
@@ -535,7 +537,7 @@ export default function Home() {
                     className={`flex-1 px-4 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2 ${outputFormat === 'audiobook' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                   >
                     <Headphones className="w-4 h-4" />
-                    Audio
+                    Audiobook (HTML Best for iPhone/Android Voices)
                   </button>
                 </div>
               </div>
