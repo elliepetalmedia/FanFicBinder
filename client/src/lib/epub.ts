@@ -525,12 +525,28 @@ export async function mockFetchUrl(url: string): Promise<{ title: string; conten
     if (!nextUrl && url.includes('royalroad.com')) {
         const rrNext = Array.from(doc.querySelectorAll('a')).find(a => 
             a.textContent?.toLowerCase().includes('next chapter') && 
-            !a.textContent?.toLowerCase().includes('next part') // Avoid parts if needed, but usually chapter is good
+            !a.textContent?.toLowerCase().includes('next part') 
         );
         if (rrNext) nextUrl = (rrNext as HTMLAnchorElement).href;
     }
 
-    // 3. General Heuristic (Fallback)
+    // 3. Wattpad Specific
+    if (!nextUrl && url.includes('wattpad.com')) {
+        // Wattpad usually splits chapters into pages. 
+        // We need to find the "Next Page" link if it exists to stitch content, 
+        // OR the "Next Part" link if we are at the end of a chapter.
+        
+        // However, since we can't easily stitch pages in this loop structure without major refactoring,
+        // we will prioritize finding the "Next Part" (next chapter).
+        // Wattpad often uses a link with class 'next-part-link' or similar.
+        
+        const wpNextPart = doc.querySelector('.next-part-link') || doc.querySelector('a.on-navigate-next');
+        if (wpNextPart) {
+            nextUrl = (wpNextPart as HTMLAnchorElement).href;
+        }
+    }
+
+    // 4. General Heuristic (Fallback)
     if (!nextUrl) {
         const links = Array.from(doc.querySelectorAll('a'));
         for (const link of links) {
@@ -544,6 +560,20 @@ export async function mockFetchUrl(url: string): Promise<{ title: string; conten
             if (text === "next" || text === "next chapter" || text === "next >" || text === ">") {
                 nextUrl = link.href;
                 break;
+            }
+        }
+    }
+
+    // Fix incomplete Wattpad content
+    // Wattpad content is often in <pre> tags or specific containers that Readability might miss or truncate
+    if (url.includes('wattpad.com')) {
+        const preContent = doc.querySelector('pre');
+        if (preContent) {
+            // If we found a pre tag, it likely contains the story text. 
+            // We should use this if Readability returned very little text.
+            const rawText = preContent.innerHTML;
+            if (rawText.length > article.content.length) {
+                article.content = rawText;
             }
         }
     }
