@@ -511,26 +511,40 @@ export async function mockFetchUrl(url: string): Promise<{ title: string; conten
     }
     
     // Find Next Chapter Link
-    // Heuristic: Look for links with text "Next", "Next Chapter", or ">" in navigation areas
     let nextUrl: string | null = null;
-    const links = Array.from(doc.querySelectorAll('a'));
-    for (const link of links) {
-        const text = (link.textContent || "").trim().toLowerCase();
-        if (text === "next" || text === "next chapter" || text === "next >" || text === ">") {
-            nextUrl = link.href;
-            break;
-        }
-        
-        // AO3 Specific
-        if (url.includes('archiveofourown.org') && link.classList.contains('next')) {
-            nextUrl = link.href;
-            break;
-        }
 
-        // RoyalRoad Specific
-        if (url.includes('royalroad.com') && text.includes('next chapter')) {
-            nextUrl = link.href;
-            break;
+    // 1. AO3 Specific (Most Reliable)
+    if (url.includes('archiveofourown.org')) {
+        const ao3Next = doc.querySelector('li.chapter.next a');
+        if (ao3Next) {
+            nextUrl = (ao3Next as HTMLAnchorElement).href;
+        }
+    }
+
+    // 2. RoyalRoad Specific
+    if (!nextUrl && url.includes('royalroad.com')) {
+        const rrNext = Array.from(doc.querySelectorAll('a')).find(a => 
+            a.textContent?.toLowerCase().includes('next chapter') && 
+            !a.textContent?.toLowerCase().includes('next part') // Avoid parts if needed, but usually chapter is good
+        );
+        if (rrNext) nextUrl = (rrNext as HTMLAnchorElement).href;
+    }
+
+    // 3. General Heuristic (Fallback)
+    if (!nextUrl) {
+        const links = Array.from(doc.querySelectorAll('a'));
+        for (const link of links) {
+            const text = (link.textContent || "").trim().toLowerCase();
+            
+            // Skip if text looks like it points to a different work
+            if (text.includes('work') || text.includes('series') || text.includes('book') || text.includes('volume')) {
+                continue;
+            }
+
+            if (text === "next" || text === "next chapter" || text === "next >" || text === ">") {
+                nextUrl = link.href;
+                break;
+            }
         }
     }
 
