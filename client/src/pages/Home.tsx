@@ -320,7 +320,7 @@ export default function Home() {
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="mb-8 text-center w-full mx-auto space-y-1">
           <p className="text-lg text-foreground/90">
-            FanFicBinder helps you archive web serials and fanfiction into clean EPUBs for your e-reader.
+            FanFicBinder helps you archive web serials and fanfiction into clean EPUBs or Reader Mode files for listening.
           </p>
           <p className="text-sm text-muted-foreground">
             100% client-side processing—nothing is uploaded or stored anywhere. See below for details.
@@ -642,7 +642,7 @@ export default function Home() {
                         <Headphones className="w-5 h-5" />
                         <span className="flex flex-col items-start text-left leading-tight">
                           <span>Reader Mode (HTML)</span>
-                          <span className="text-[10px] opacity-70 font-normal">Best for Speechify / VoiceOver</span>
+                          <span className="text-xs opacity-90 font-normal">Best for VoiceOver, Speechify, or Edge Read Aloud</span>
                         </span>
                       </button>
                     </div>
@@ -682,7 +682,7 @@ export default function Home() {
                     <Headphones className="w-5 h-5 flex-shrink-0" />
                     <span className="flex flex-col items-start text-left leading-tight overflow-hidden">
                       <span className="truncate w-full">Reader Mode</span>
-                      <span className="text-[10px] opacity-70 font-normal truncate w-full">Best for Speech Apps</span>
+                      <span className="text-xs opacity-90 font-normal truncate w-full">Best for VoiceOver, Speechify, or Edge Read Aloud</span>
                     </span>
                   </button>
                 </div>
