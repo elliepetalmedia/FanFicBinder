@@ -67,18 +67,23 @@ export default function FAQ() {
             </div>
           </section>
 
-          {/* Audiobook */}
+          {/* Reader Mode */}
           <section className="space-y-3">
-            <h3 className="text-xl font-bold font-serif text-foreground">What is Audiobook Mode?</h3>
+            <h3 className="text-xl font-bold font-serif text-foreground">What is Reader Mode?</h3>
             <div className="space-y-2 text-foreground/90">
               <p>
-                Instead of an EPUB, you can download a single HTML file designed for listening.
+                Reader Mode generates a clean, single-file HTML version of your book optimized for accessibility tools.
               </p>
               <p>
-                Open this file in any browser (Safari on iPhone or Chrome on Android recommended). It uses your device's built-in "Premium" text-to-speech voices to read the story to you.
+                <strong>How to use it:</strong>
               </p>
-              <p>
-                It features auto-scrolling, speed control, and it remembers your progress even if you close the browser.
+              <ul className="list-disc pl-6 space-y-1">
+                <li><strong>Mobile:</strong> Open the file in Safari (iOS) or Edge (Android) and use the "Listen to Page" or "Read Aloud" feature.</li>
+                <li><strong>Desktop:</strong> Open in Edge and click the "Read Aloud" (A) icon in the address bar.</li>
+                <li><strong>Speech Apps:</strong> Import the file directly into Speechify or Voice Dream Reader.</li>
+              </ul>
+              <p className="text-sm text-muted-foreground italic">
+                The file includes special "aria-labels" and semantic structure so screen readers know exactly where chapters begin and end.
               </p>
             </div>
           </section>

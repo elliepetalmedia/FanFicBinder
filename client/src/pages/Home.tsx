@@ -715,7 +715,7 @@ export default function Home() {
                <strong>New!</strong> Use our "Sequence Fetching" to automatically grab multiple chapters in a row from AO3 or RoyalRoad. Just check the box and watch it go.
             </p>
             <p className="leading-relaxed mb-4">
-               <strong>Audiobook Mode:</strong> Prefer listening? Export your binder as a smart HTML Audiobook. Open the file on your phone, and it will use your device's high-quality text-to-speech voices to read to you offline, complete with auto-scrolling and progress saving.
+               <strong>Reader Mode:</strong> Prefer listening? Export your binder as a clean HTML file optimized for text-to-speech tools. Open it in Edge (Read Aloud), Safari (Listen to Page), or Speechify for a perfect audiobook experience.
             </p>
             <ul className="list-disc pl-6 space-y-2 mb-6">
               <li>Amazon Kindle (via Send-to-Kindle)</li>
