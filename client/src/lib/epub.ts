@@ -453,9 +453,14 @@ async function retry<T>(fn: () => Promise<T>, retries = 3, delay = 1000): Promis
 async function fetchWithFallback(url: string): Promise<string> {
   const errors: string[] = [];
 
-  // Strategy 1: Use our own backend proxy (most reliable)
+  // Strategy 1: Use our Netlify Function proxy (production) or Express proxy (development)
   try {
-    const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
+    // Check if we're in production (Netlify) or development (Express)
+    const isNetlify = window.location.hostname.includes('netlify') || window.location.hostname.includes('.app');
+    const proxyUrl = isNetlify 
+      ? `/.netlify/functions/proxy?url=${encodeURIComponent(url)}`
+      : `/api/proxy?url=${encodeURIComponent(url)}`;
+    
     const response = await fetch(proxyUrl);
     
     if (!response.ok) {
