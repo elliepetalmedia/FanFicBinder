@@ -335,8 +335,8 @@ export default function Home() {
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="font-serif text-xl">Add Content</CardTitle>
                 <Link href="/faq">
-                  <a className="text-xs text-primary hover:text-primary/80 transition-colors underline">
-                    FAQ
+                  <a className="text-sm font-medium text-primary hover:text-primary/80 transition-colors underline px-2 py-1">
+                    Help & FAQ
                   </a>
                 </Link>
               </CardHeader>
