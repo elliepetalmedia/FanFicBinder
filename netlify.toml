@@ -6,11 +6,13 @@
 [functions]
   node_bundler = "esbuild"
 
+# 1. Connect the Frontend (API) to the Backend (Function)
 [[redirects]]
-  from = "/.netlify/functions/proxy"
-  to = "/.netlify/functions/proxy"
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
   status = 200
 
+# 2. SPA Fallback (Prevents 404s on reload)
 [[redirects]]
   from = "/*"
   to = "/index.html"
