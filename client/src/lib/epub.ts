@@ -449,11 +449,28 @@ async function retry<T>(fn: () => Promise<T>, retries = 3, delay = 1000): Promis
   }
 }
 
-// Fetch with fallback proxies
+// Fetch with server-side proxy
 async function fetchWithFallback(url: string): Promise<string> {
   const errors: string[] = [];
 
-  // Strategy 1: AllOrigins (JSONP-like CORS proxy)
+  // Strategy 1: Use our own backend proxy (most reliable)
+  try {
+    const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
+    const response = await fetch(proxyUrl);
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+      throw new Error(`Backend proxy error: ${errorData.error || response.status}`);
+    }
+    
+    const text = await response.text();
+    if (text) return text;
+    throw new Error("Backend proxy returned empty content");
+  } catch (e) {
+    errors.push((e as Error).message);
+  }
+
+  // Strategy 2: Fallback to AllOrigins (public CORS proxy)
   try {
     const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
     const response = await fetch(proxyUrl);
@@ -465,9 +482,8 @@ async function fetchWithFallback(url: string): Promise<string> {
     errors.push((e as Error).message);
   }
 
-  // Strategy 2: Corsproxy.io (Direct CORS proxy)
+  // Strategy 3: Fallback to Corsproxy.io
   try {
-    // Note: corsproxy.io appends the URL directly
     const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
     const response = await fetch(proxyUrl);
     if (!response.ok) throw new Error(`CorsProxy error: ${response.status}`);
