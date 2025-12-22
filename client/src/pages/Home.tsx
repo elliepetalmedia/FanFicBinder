@@ -101,8 +101,33 @@ export default function Home() {
             chapterCount++;
             setFetchProgress(prev => ({ ...prev, current: chapterCount }));
             
-            // 1. Fetch
-            const result = await mockFetchUrl(currentUrl);
+            // 1. Fetch with Retry Logic
+            let result;
+            let retryCount = 0;
+            const maxRetries = 3;
+
+            while (retryCount < maxRetries && !controller.signal.aborted) {
+                try {
+                    result = await mockFetchUrl(currentUrl);
+                    break; // Success
+                } catch (err: any) {
+                    const errorMsg = err.message || "";
+                    if (errorMsg.includes("429") || errorMsg.includes("503") || errorMsg.includes("Too Many Requests")) {
+                        // Rate limit hit - wait 10s
+                        toast({
+                            title: "Rate Limit Detected",
+                            description: "Pausing for 10 seconds to cool down...",
+                            variant: "default",
+                        });
+                        await new Promise(resolve => setTimeout(resolve, 10000));
+                        retryCount++;
+                    } else {
+                        throw err; // Fatal error
+                    }
+                }
+            }
+
+            if (!result) throw new Error("Max retries exceeded");
             
             // 2. Add to list
             const newChapter: Chapter = {
@@ -117,8 +142,9 @@ export default function Home() {
             // 3. Check for next
             if (result.nextUrl && result.nextUrl !== currentUrl) {
                 currentUrl = result.nextUrl;
-                // 4. Polite delay
-                await new Promise(resolve => setTimeout(resolve, 1500)); 
+                // 4. Polite dynamic delay (1.5s to 3.5s)
+                const delay = Math.floor(Math.random() * 2000) + 1500;
+                await new Promise(resolve => setTimeout(resolve, delay)); 
             } else {
                 currentUrl = "";
             }
