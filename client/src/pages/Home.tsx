@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { generateEpub, generateAudiobookHTML, mockFetchUrl, type Chapter } from "@/lib/epub";
+import { generateEpub, generateReaderModeHTML, mockFetchUrl, type Chapter } from "@/lib/epub";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -43,7 +43,7 @@ export default function Home() {
   const [font, setFont] = useState("serif");
   const [spacing, setSpacing] = useState("1.6");
   const [dropCaps, setDropCaps] = useState(false);
-  const [outputFormat, setOutputFormat] = useState<"epub" | "audiobook">("epub");
+  const [outputFormat, setOutputFormat] = useState<"epub" | "reader">("epub");
 
   const [isMultiChapter, setIsMultiChapter] = useState(false);
   const [fetchProgress, setFetchProgress] = useState<{ current: number; total: string }>({ current: 0, total: "?" });
@@ -228,15 +228,15 @@ export default function Home() {
     }
 
     try {
-      if (outputFormat === 'audiobook') {
-        await generateAudiobookHTML(chapters, {
+      if (outputFormat === 'reader') {
+        await generateReaderModeHTML(chapters, {
           title: bookTitle,
           author: authorName,
           cover: coverImage
         });
         toast({
-          title: "Audiobook Ready",
-          description: "Your HTML audiobook has been generated.",
+          title: "Reader Mode HTML Ready",
+          description: "Your file has been generated.",
         });
       } else {
         await generateEpub(chapters, { 
@@ -636,13 +636,13 @@ export default function Home() {
                         EPUB
                       </button>
                       <button
-                        onClick={() => setOutputFormat('audiobook')}
-                        className={`px-6 py-3 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 flex-1 sm:flex-none ${outputFormat === 'audiobook' ? 'bg-background shadow-md text-primary scale-[1.02]' : 'text-muted-foreground hover:text-foreground hover:bg-background/50'}`}
+                        onClick={() => setOutputFormat('reader')}
+                        className={`px-6 py-3 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 flex-1 sm:flex-none ${outputFormat === 'reader' ? 'bg-background shadow-md text-primary scale-[1.02]' : 'text-muted-foreground hover:text-foreground hover:bg-background/50'}`}
                       >
                         <Headphones className="w-5 h-5" />
                         <span className="flex flex-col items-start text-left leading-tight">
-                          <span>Audiobook (HTML)</span>
-                          <span className="text-[10px] opacity-70 font-normal">Best for iPhone/Android Voices</span>
+                          <span>Reader Mode (HTML)</span>
+                          <span className="text-[10px] opacity-70 font-normal">Best for Speechify / VoiceOver</span>
                         </span>
                       </button>
                     </div>
@@ -654,7 +654,7 @@ export default function Home() {
                     onClick={handleDownload}
                   >
                     <Download className="mr-2 h-5 w-5" />
-                    Download {outputFormat === 'epub' ? 'EPUB' : 'Audiobook'} ({chapters.reduce((acc, c) => acc + c.wordCount, 0).toLocaleString()} words)
+                    Download {outputFormat === 'epub' ? 'EPUB' : 'Reader Mode'} ({chapters.reduce((acc, c) => acc + c.wordCount, 0).toLocaleString()} words)
                   </Button>
                 </div>
               )}
@@ -676,13 +676,13 @@ export default function Home() {
                     EPUB
                   </button>
                   <button
-                    onClick={() => setOutputFormat('audiobook')}
-                    className={`flex-[2] px-4 py-3 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${outputFormat === 'audiobook' ? 'bg-background shadow-md text-primary scale-[1.02]' : 'text-muted-foreground hover:text-foreground hover:bg-background/50'}`}
+                    onClick={() => setOutputFormat('reader')}
+                    className={`flex-[2] px-4 py-3 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${outputFormat === 'reader' ? 'bg-background shadow-md text-primary scale-[1.02]' : 'text-muted-foreground hover:text-foreground hover:bg-background/50'}`}
                   >
                     <Headphones className="w-5 h-5 flex-shrink-0" />
                     <span className="flex flex-col items-start text-left leading-tight overflow-hidden">
-                      <span className="truncate w-full">Audiobook</span>
-                      <span className="text-[10px] opacity-70 font-normal truncate w-full">Best for Mobile Voices</span>
+                      <span className="truncate w-full">Reader Mode</span>
+                      <span className="text-[10px] opacity-70 font-normal truncate w-full">Best for Speech Apps</span>
                     </span>
                   </button>
                 </div>
@@ -693,7 +693,7 @@ export default function Home() {
               onClick={handleDownload}
             >
               <Download className="mr-2 h-5 w-5" />
-              Download {outputFormat === 'epub' ? 'EPUB' : 'Audiobook'}
+              Download {outputFormat === 'epub' ? 'EPUB' : 'Reader Mode'}
             </Button>
           </div>
         )}

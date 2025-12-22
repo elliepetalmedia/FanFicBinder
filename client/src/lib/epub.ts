@@ -598,3 +598,80 @@ export async function mockFetchUrl(url: string): Promise<{ title: string; conten
     throw new Error(`Connection Failed: ${errorMessage}. Try manual entry.`);
   }
 }
+
+export async function generateReaderModeHTML(chapters: Chapter[], metadata: BookMetadata) {
+  try {
+    const combinedContent = chapters.map(c => `
+      <article class="chapter" aria-label="${escapeXml(c.title)}">
+        <h2>${escapeXml(c.title)}</h2>
+        ${sanitizeContent(c.content)}
+      </article>
+    `).join('\n<hr/>\n');
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeXml(metadata.title)} - Reader Mode</title>
+  <style>
+    body { 
+      font-family: system-ui, -apple-system, sans-serif; 
+      line-height: 1.6; 
+      max-width: 800px; 
+      margin: 0 auto; 
+      padding: 20px; 
+      background: #ffffff; 
+      color: #333; 
+    }
+    h1 { text-align: center; color: #2c3e50; margin-bottom: 40px; }
+    h2 { border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 60px; }
+    p { margin-bottom: 1.2em; }
+    
+    /* Utility for screen readers */
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border-width: 0;
+    }
+
+    #reader-instructions {
+        padding: 20px; 
+        text-align: center; 
+        border-bottom: 1px solid #ccc;
+        margin-bottom: 40px;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <a href="#content" class="sr-only">Skip to content</a>
+  
+  <div id="reader-instructions">
+     <p><strong>Audiobook Ready:</strong> Open this file in Edge (Read Aloud) or Safari (Listen to Page) for the best experience.</p>
+  </div>
+
+  <main id="content">
+      <h1>${escapeXml(metadata.title)}</h1>
+      <p style="text-align: center; color: #666; margin-bottom: 40px;">by ${escapeXml(metadata.author)}</p>
+      
+      ${combinedContent}
+  </main>
+</body>
+</html>`;
+
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    saveAs(blob, `${metadata.title.replace(/[^a-z0-9]/gi, '_')}_reader.html`);
+    return true;
+  } catch (error) {
+    console.error("Error generating Reader Mode HTML:", error);
+    throw new Error("Failed to generate Reader Mode HTML");
+  }
+}
