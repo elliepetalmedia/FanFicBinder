@@ -21,13 +21,19 @@ import { Book, Download, Trash2, Plus, Link as LinkIcon, FileText, Loader2, Imag
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useSEO } from "@/hooks/useSEO";
 
 export default function Home() {
+  useSEO({
+    title: "FanFicBinder - Universal Web to EPUB Converter",
+    description: "The ultimate tool for archiving web serials, fanfiction, and articles from AO3, Wattpad, and RoyalRoad to EPUB or Reader Mode for offline reading on Kindle and e-readers."
+  });
+
   const { toast } = useToast();
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [urlInput, setUrlInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  
+
   // Manual Entry State
   const [manualTitle, setManualTitle] = useState("");
   const [manualContent, setManualContent] = useState("");
@@ -54,8 +60,8 @@ export default function Home() {
     if (!urlInput) return;
 
     if (isMultiChapter) {
-        handleFetchSequence();
-        return;
+      handleFetchSequence();
+      return;
     }
 
     setIsLoading(true);
@@ -67,7 +73,7 @@ export default function Home() {
         content: result.content,
         wordCount: result.content.split(/\s+/).length,
       };
-      
+
       setChapters([...chapters, newChapter]);
       setUrlInput("");
       toast({
@@ -95,101 +101,101 @@ export default function Home() {
 
     let currentUrl = urlInput;
     let chapterCount = 0;
-    
+
     try {
-        while (currentUrl && !controller.signal.aborted) {
-            chapterCount++;
-            setFetchProgress(prev => ({ ...prev, current: chapterCount }));
-            
-            // 1. Fetch with Retry Logic
-            let result;
-            let retryCount = 0;
-            const maxRetries = 3;
+      while (currentUrl && !controller.signal.aborted) {
+        chapterCount++;
+        setFetchProgress(prev => ({ ...prev, current: chapterCount }));
 
-            while (retryCount < maxRetries && !controller.signal.aborted) {
-                try {
-                    result = await mockFetchUrl(currentUrl);
-                    break; // Success
-                } catch (err: any) {
-                    const errorMsg = err.message || "";
-                    if (errorMsg.includes("429") || errorMsg.includes("503") || errorMsg.includes("Too Many Requests")) {
-                        // Rate limit hit - wait 10s
-                        toast({
-                            title: "Rate Limit Detected",
-                            description: "Pausing for 10 seconds to cool down...",
-                            variant: "default",
-                        });
-                        await new Promise(resolve => setTimeout(resolve, 10000));
-                        retryCount++;
-                    } else {
-                        throw err; // Fatal error
-                    }
-                }
-            }
+        // 1. Fetch with Retry Logic
+        let result;
+        let retryCount = 0;
+        const maxRetries = 3;
 
-            if (!result) throw new Error("Max retries exceeded");
-            
-            // 2. Add to list
-            const newChapter: Chapter = {
-                id: Date.now().toString() + Math.random(),
-                title: result.title,
-                content: result.content,
-                wordCount: result.content.split(/\s+/).length,
-            };
-            
-            setChapters(prev => [...prev, newChapter]); // Functional update to ensure fresh state
-            
-            // 3. Check for next
-            if (result.nextUrl && result.nextUrl !== currentUrl) {
-                currentUrl = result.nextUrl;
-                // 4. Polite dynamic delay (1.5s to 3.5s)
-                const delay = Math.floor(Math.random() * 2000) + 1500;
-                await new Promise(resolve => setTimeout(resolve, delay)); 
+        while (retryCount < maxRetries && !controller.signal.aborted) {
+          try {
+            result = await mockFetchUrl(currentUrl);
+            break; // Success
+          } catch (err: any) {
+            const errorMsg = err.message || "";
+            if (errorMsg.includes("429") || errorMsg.includes("503") || errorMsg.includes("Too Many Requests")) {
+              // Rate limit hit - wait 10s
+              toast({
+                title: "Rate Limit Detected",
+                description: "Pausing for 10 seconds to cool down...",
+                variant: "default",
+              });
+              await new Promise(resolve => setTimeout(resolve, 10000));
+              retryCount++;
             } else {
-                currentUrl = "";
+              throw err; // Fatal error
             }
+          }
+        }
 
-            // Safety break
-            if (chapterCount > 50) {
-                 toast({
-                    title: "Sequence Limit Reached",
-                    description: "Stopped after 50 chapters to prevent browser issues.",
-                    variant: "default",
-                  });
-                break;
-            }
+        if (!result) throw new Error("Max retries exceeded");
+
+        // 2. Add to list
+        const newChapter: Chapter = {
+          id: Date.now().toString() + Math.random(),
+          title: result.title,
+          content: result.content,
+          wordCount: result.content.split(/\s+/).length,
+        };
+
+        setChapters(prev => [...prev, newChapter]); // Functional update to ensure fresh state
+
+        // 3. Check for next
+        if (result.nextUrl && result.nextUrl !== currentUrl) {
+          currentUrl = result.nextUrl;
+          // 4. Polite dynamic delay (1.5s to 3.5s)
+          const delay = Math.floor(Math.random() * 2000) + 1500;
+          await new Promise(resolve => setTimeout(resolve, delay));
+        } else {
+          currentUrl = "";
         }
-        
-        if (!controller.signal.aborted) {
-            toast({
-                title: "Sequence Complete",
-                description: `Fetched ${chapterCount} chapters.`,
-            });
-            setUrlInput("");
+
+        // Safety break
+        if (chapterCount > 50) {
+          toast({
+            title: "Sequence Limit Reached",
+            description: "Stopped after 50 chapters to prevent browser issues.",
+            variant: "default",
+          });
+          break;
         }
+      }
+
+      if (!controller.signal.aborted) {
+        toast({
+          title: "Sequence Complete",
+          description: `Fetched ${chapterCount} chapters.`,
+        });
+        setUrlInput("");
+      }
 
     } catch (error) {
-         if (!controller.signal.aborted) {
-            toast({
-                title: "Sequence Interrupted",
-                description: "Failed to fetch a chapter. Stopping sequence.",
-                variant: "destructive",
-            });
-         }
+      if (!controller.signal.aborted) {
+        toast({
+          title: "Sequence Interrupted",
+          description: "Failed to fetch a chapter. Stopping sequence.",
+          variant: "destructive",
+        });
+      }
     } finally {
-        setIsFetchingSequence(false);
-        setAbortController(null);
+      setIsFetchingSequence(false);
+      setAbortController(null);
     }
   };
 
   const cancelFetch = () => {
     if (abortController) {
-        abortController.abort();
-        setIsFetchingSequence(false);
-        toast({
-            title: "Stopped",
-            description: "Fetching sequence cancelled.",
-        });
+      abortController.abort();
+      setIsFetchingSequence(false);
+      toast({
+        title: "Stopped",
+        description: "Fetching sequence cancelled.",
+      });
     }
   };
 
@@ -199,7 +205,7 @@ export default function Home() {
     const newChapter: Chapter = {
       id: Date.now().toString(),
       title: manualTitle,
-      content: manualContent.split('\n').filter(line => line.trim()).map(line => `<p>${line}</p>`).join(''), 
+      content: manualContent.split('\n').filter(line => line.trim()).map(line => `<p>${line}</p>`).join(''),
       wordCount: manualContent.split(/\s+/).length,
     };
 
@@ -239,8 +245,8 @@ export default function Home() {
           description: "Your file has been generated.",
         });
       } else {
-        await generateEpub(chapters, { 
-          title: bookTitle, 
+        await generateEpub(chapters, {
+          title: bookTitle,
           author: authorName,
           cover: coverImage
         }, {
@@ -328,7 +334,7 @@ export default function Home() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
+
           {/* Left Column: Input Tools */}
           <div className="lg:col-span-1 space-y-6">
             <Card className="border-border shadow-lg bg-card">
@@ -346,14 +352,14 @@ export default function Home() {
                     <TabsTrigger value="url">URL Fetcher</TabsTrigger>
                     <TabsTrigger value="manual">Manual</TabsTrigger>
                   </TabsList>
-                  
+
                   <TabsContent value="url" className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="url-input">Story URL</Label>
                       <div className="flex gap-2">
-                        <Input 
-                          id="url-input" 
-                          placeholder="https://archiveofourown.org/..." 
+                        <Input
+                          id="url-input"
+                          placeholder="https://archiveofourown.org/..."
                           value={urlInput}
                           onChange={(e) => setUrlInput(e.target.value)}
                           className="bg-input border-border text-foreground"
@@ -363,8 +369,8 @@ export default function Home() {
                         Supports AO3, Wattpad, RoyalRoad, and most article sites.
                       </p>
                       <div className="flex items-center space-x-2 pt-1">
-                        <Checkbox 
-                          id="multi-chapter" 
+                        <Checkbox
+                          id="multi-chapter"
                           checked={isMultiChapter}
                           onCheckedChange={(checked) => setIsMultiChapter(checked === true)}
                           disabled={isFetchingSequence}
@@ -397,7 +403,7 @@ export default function Home() {
                               </SelectContent>
                             </Select>
                           </div>
-                          
+
                           <div className="grid gap-2">
                             <Label htmlFor="spacing-select">Line Spacing</Label>
                             <Select value={spacing} onValueChange={setSpacing}>
@@ -413,10 +419,10 @@ export default function Home() {
                           </div>
 
                           <div className="flex items-center space-x-2 pt-2">
-                            <Checkbox 
-                              id="dropcaps" 
-                              checked={dropCaps} 
-                              onCheckedChange={(checked) => setDropCaps(checked === true)} 
+                            <Checkbox
+                              id="dropcaps"
+                              checked={dropCaps}
+                              onCheckedChange={(checked) => setDropCaps(checked === true)}
                             />
                             <Label htmlFor="dropcaps" className="font-normal cursor-pointer">
                               Add Drop Caps to Chapter Start
@@ -427,35 +433,35 @@ export default function Home() {
                     </Accordion>
 
                     {isFetchingSequence ? (
-                         <Button 
-                          onClick={cancelFetch} 
-                          variant="destructive"
-                          className="w-full"
-                        >
-                          <X className="mr-2 h-4 w-4" />
-                          Stop Fetching (Chapter {fetchProgress.current})
-                        </Button>
+                      <Button
+                        onClick={cancelFetch}
+                        variant="destructive"
+                        className="w-full"
+                      >
+                        <X className="mr-2 h-4 w-4" />
+                        Stop Fetching (Chapter {fetchProgress.current})
+                      </Button>
                     ) : (
-                        <Button 
-                          onClick={handleFetchUrl} 
-                          disabled={isLoading || !urlInput} 
-                          className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-                        >
-                          {isLoading ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Fetching...
-                            </>
-                          ) : (
-                            <>
-                              <LinkIcon className="mr-2 h-4 w-4" />
-                              {isMultiChapter ? 'Start Chapter Fetch Sequence' : 'Fetch Chapter'}
-                            </>
-                          )}
-                        </Button>
+                      <Button
+                        onClick={handleFetchUrl}
+                        disabled={isLoading || !urlInput}
+                        className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                      >
+                        {isLoading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Fetching...
+                          </>
+                        ) : (
+                          <>
+                            <LinkIcon className="mr-2 h-4 w-4" />
+                            {isMultiChapter ? 'Start Chapter Fetch Sequence' : 'Fetch Chapter'}
+                          </>
+                        )}
+                      </Button>
                     )}
                   </TabsContent>
-                  
+
                   <TabsContent value="manual" className="space-y-4">
                     <div className="p-4 border border-dashed border-border rounded-lg text-center space-y-3">
                       <FileText className="w-8 h-8 mx-auto text-muted-foreground" />
@@ -474,8 +480,8 @@ export default function Home() {
                           <div className="space-y-4 py-4">
                             <div className="space-y-2">
                               <Label htmlFor="chapter-title">Chapter Title</Label>
-                              <Input 
-                                id="chapter-title" 
+                              <Input
+                                id="chapter-title"
                                 value={manualTitle}
                                 onChange={(e) => setManualTitle(e.target.value)}
                                 placeholder="Chapter 1: The Beginning"
@@ -484,8 +490,8 @@ export default function Home() {
                             </div>
                             <div className="space-y-2">
                               <Label htmlFor="chapter-content">Content</Label>
-                              <Textarea 
-                                id="chapter-content" 
+                              <Textarea
+                                id="chapter-content"
                                 value={manualContent}
                                 onChange={(e) => setManualContent(e.target.value)}
                                 placeholder="Paste story text here..."
@@ -511,36 +517,36 @@ export default function Home() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="book-title">Book Title</Label>
-                  <Input 
-                    id="book-title" 
-                    value={bookTitle} 
+                  <Input
+                    id="book-title"
+                    value={bookTitle}
                     onChange={(e) => setBookTitle(e.target.value)}
                     className="bg-input border-border font-serif font-bold"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="author-name">Author</Label>
-                  <Input 
-                    id="author-name" 
-                    value={authorName} 
+                  <Input
+                    id="author-name"
+                    value={authorName}
                     onChange={(e) => setAuthorName(e.target.value)}
                     className="bg-input border-border"
                   />
                 </div>
-                
+
                 <div className="space-y-2 pt-2">
                   <Label>Cover Image</Label>
                   {coverPreview ? (
                     <div className="relative aspect-[2/3] w-32 mx-auto group rounded-lg overflow-hidden border border-border shadow-sm">
-                      <img 
-                        src={coverPreview} 
-                        alt="Book Cover" 
+                      <img
+                        src={coverPreview}
+                        alt="Book Cover"
                         className="w-full h-full object-cover"
                       />
                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <Button 
-                          variant="destructive" 
-                          size="icon" 
+                        <Button
+                          variant="destructive"
+                          size="icon"
                           onClick={handleRemoveCover}
                           className="h-8 w-8"
                         >
@@ -550,8 +556,8 @@ export default function Home() {
                     </div>
                   ) : (
                     <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:bg-accent/5 transition-colors cursor-pointer relative">
-                      <input 
-                        type="file" 
+                      <input
+                        type="file"
                         accept="image/*"
                         onChange={handleCoverUpload}
                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
@@ -623,7 +629,7 @@ export default function Home() {
               </CardContent>
               {chapters.length > 0 && (
                 <div className="p-4 border-t border-border bg-card rounded-b-lg hidden lg:block space-y-4">
-                  
+
                   {/* Output Format Selector */}
                   <div className="flex flex-col items-center gap-3">
                     <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Choose Output Format:</span>
@@ -648,8 +654,8 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <Button 
-                    size="lg" 
+                  <Button
+                    size="lg"
                     className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold shadow-lg shadow-primary/20"
                     onClick={handleDownload}
                   >
@@ -661,34 +667,34 @@ export default function Home() {
             </Card>
           </div>
         </div>
-        
+
         {/* Mobile Sticky Download Button */}
         {chapters.length > 0 && (
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-card border-t border-border lg:hidden z-50 shadow-xl space-y-4 pb-8">
-             <div className="flex flex-col items-center gap-3">
-                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Choose Output Format:</span>
-                <div className="bg-secondary/20 p-1.5 rounded-xl flex gap-1 w-full">
-                  <button
-                    onClick={() => setOutputFormat('epub')}
-                    className={`flex-1 px-4 py-3 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${outputFormat === 'epub' ? 'bg-background shadow-md text-primary scale-[1.02]' : 'text-muted-foreground hover:text-foreground hover:bg-background/50'}`}
-                  >
-                    <Book className="w-5 h-5" />
-                    EPUB
-                  </button>
-                  <button
-                    onClick={() => setOutputFormat('reader')}
-                    className={`flex-[2] px-4 py-3 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${outputFormat === 'reader' ? 'bg-background shadow-md text-primary scale-[1.02]' : 'text-muted-foreground hover:text-foreground hover:bg-background/50'}`}
-                  >
-                    <Headphones className="w-5 h-5 flex-shrink-0" />
-                    <span className="flex flex-col items-start text-left leading-tight overflow-hidden">
-                      <span className="truncate w-full">Reader Mode</span>
-                      <span className="text-xs opacity-90 font-normal truncate w-full">Best for VoiceOver, Speechify, or Edge Read Aloud</span>
-                    </span>
-                  </button>
-                </div>
+            <div className="flex flex-col items-center gap-3">
+              <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Choose Output Format:</span>
+              <div className="bg-secondary/20 p-1.5 rounded-xl flex gap-1 w-full">
+                <button
+                  onClick={() => setOutputFormat('epub')}
+                  className={`flex-1 px-4 py-3 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${outputFormat === 'epub' ? 'bg-background shadow-md text-primary scale-[1.02]' : 'text-muted-foreground hover:text-foreground hover:bg-background/50'}`}
+                >
+                  <Book className="w-5 h-5" />
+                  EPUB
+                </button>
+                <button
+                  onClick={() => setOutputFormat('reader')}
+                  className={`flex-[2] px-4 py-3 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${outputFormat === 'reader' ? 'bg-background shadow-md text-primary scale-[1.02]' : 'text-muted-foreground hover:text-foreground hover:bg-background/50'}`}
+                >
+                  <Headphones className="w-5 h-5 flex-shrink-0" />
+                  <span className="flex flex-col items-start text-left leading-tight overflow-hidden">
+                    <span className="truncate w-full">Reader Mode</span>
+                    <span className="text-xs opacity-90 font-normal truncate w-full">Best for VoiceOver, Speechify, or Edge Read Aloud</span>
+                  </span>
+                </button>
               </div>
-            <Button 
-              size="lg" 
+            </div>
+            <Button
+              size="lg"
               className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold shadow-lg shadow-primary/20"
               onClick={handleDownload}
             >
@@ -712,10 +718,10 @@ export default function Home() {
               Most fanfiction sites are designed for browsers, not e-readers. We use Mozilla's advanced "Readability" engine to strip away the sidebars, ads, and comments, leaving only the story text. We then package it into a valid EPUB file.
             </p>
             <p className="leading-relaxed mb-4">
-               <strong>New!</strong> Use our "Sequence Fetching" to automatically grab multiple chapters in a row from AO3 or RoyalRoad. Just check the box and watch it go.
+              <strong>New!</strong> Use our "Sequence Fetching" to automatically grab multiple chapters in a row from AO3 or RoyalRoad. Just check the box and watch it go.
             </p>
             <p className="leading-relaxed mb-4">
-               <strong>Reader Mode:</strong> Prefer listening? Export your binder as a clean HTML file optimized for text-to-speech tools. Open it in Edge (Read Aloud), Safari (Listen to Page), or Speechify for a perfect audiobook experience.
+              <strong>Reader Mode:</strong> Prefer listening? Export your binder as a clean HTML file optimized for text-to-speech tools. Open it in Edge (Read Aloud), Safari (Listen to Page), or Speechify for a perfect audiobook experience.
             </p>
             <ul className="list-disc pl-6 space-y-2 mb-6">
               <li>Amazon Kindle (via Send-to-Kindle)</li>
@@ -728,7 +734,7 @@ export default function Home() {
               Authors sometimes delete their work. By downloading an EPUB, you ensure you have a permanent offline copy of your favorite stories. Plus, reading on an e-reader reduces eye strain compared to scrolling on a phone.
             </p>
           </div>
-          
+
           {/* Ad Slots removed */}
         </article>
       </main>

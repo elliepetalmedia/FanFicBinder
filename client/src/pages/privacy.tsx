@@ -1,19 +1,25 @@
 import { Link } from "wouter";
+import { useSEO } from "@/hooks/useSEO";
 
 export default function Privacy() {
+  useSEO({
+    title: "Privacy Policy - FanFicBinder",
+    description: "Read the Privacy Policy for FanFicBinder to understand how we process data locally and handle cookies."
+  });
+
   return (
     <div className="min-h-screen bg-background text-foreground p-8 font-sans">
       <div className="max-w-2xl mx-auto space-y-6">
         <Link href="/" className="text-primary hover:text-primary/80 no-underline">
           &larr; Back to Binder
         </Link>
-        
+
         <h1 className="text-4xl font-bold text-primary font-serif">Privacy Policy</h1>
-        
+
         <div className="space-y-6 text-lg leading-relaxed">
           <p><strong>Last Updated:</strong> 2025</p>
           <p>This Privacy Policy applies to FanFicBinder.com, published by Ellie Petal Media.</p>
-          
+
           <div>
             <h3 className="text-2xl font-bold mb-2 text-foreground">1. Data Processing</h3>
             <p>When you use the "Fetch from URL" feature, the URL is sent to our serverless function solely to retrieve the text. We do not store, log, or retain the content of the stories you download. The EPUB file generation happens locally on your device.</p>

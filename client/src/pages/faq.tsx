@@ -1,8 +1,14 @@
 import { Link } from "wouter";
 import { CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronLeft } from "lucide-react";
+import { useSEO } from "@/hooks/useSEO";
 
 export default function FAQ() {
+  useSEO({
+    title: "FAQ - How to Use FanFicBinder",
+    description: "Frequently asked questions about using FanFicBinder to download web serials, AO3, Wattpad, and RoyalRoad to EPUB or Reader Mode."
+  });
+
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground font-sans">
       {/* Header */}

@@ -36,7 +36,7 @@ function sanitizeContent(content: string): string {
     // This automatically handles tag closing and nesting better than regex
     const parser = new DOMParser();
     const doc = parser.parseFromString(`<body>${content}</body>`, 'text/html');
-    
+
     // Clean up the DOM
     const body = doc.body;
 
@@ -50,33 +50,33 @@ function sanitizeContent(content: string): string {
     // Ensure images are proper
     const images = body.querySelectorAll('img');
     images.forEach(img => {
-        if (!img.hasAttribute('alt')) img.setAttribute('alt', '');
+      if (!img.hasAttribute('alt')) img.setAttribute('alt', '');
     });
-    
+
     // Serialize back to XML string
     const serializer = new XMLSerializer();
     // Serialize children of body to avoid including the body tag itself if we just want content
     // But we need to handle the case where content might be text nodes mixed with elements
-    
+
     let serialized = "";
     // Iterate over child nodes to serialize them individually
     Array.from(body.childNodes).forEach(node => {
-        serialized += serializer.serializeToString(node);
+      serialized += serializer.serializeToString(node);
     });
-    
+
     // Fallback if serialization fails or returns empty
     if (!serialized) {
-        // If content was text-only, it might have been parsed into body text content
-        serialized = escapeXml(body.textContent || "");
-        // Wrap in p if it's just text
-        if (serialized && !serialized.startsWith('<')) {
-            serialized = `<p>${serialized}</p>`;
-        }
+      // If content was text-only, it might have been parsed into body text content
+      serialized = escapeXml(body.textContent || "");
+      // Wrap in p if it's just text
+      if (serialized && !serialized.startsWith('<')) {
+        serialized = `<p>${serialized}</p>`;
+      }
     }
-    
+
     // If empty, return a non-breaking space paragraph
     if (!serialized.trim()) {
-        return '<p>&#160;</p>';
+      return '<p>&#160;</p>';
     }
 
     return serialized;
@@ -85,7 +85,7 @@ function sanitizeContent(content: string): string {
     // Fallback to basic cleanup if DOM parser fails (unlikely in browser)
     let clean = content;
     clean = clean.replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gim, "")
-                 .replace(/<style\b[^>]*>([\s\S]*?)<\/style>/gim, "");
+      .replace(/<style\b[^>]*>([\s\S]*?)<\/style>/gim, "");
     return clean;
   }
 }
@@ -326,7 +326,7 @@ export async function generateEpub(chapters: Chapter[], metadata: BookMetadata, 
     zip.file('mimetype', 'application/epub+zip', { compression: 'STORE' });
 
     // 2. container.xml
-    zip.folder('META-INF')?.file('container.xml', 
+    zip.folder('META-INF')?.file('container.xml',
       '<?xml version="1.0"?>' +
       '<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">' +
       '  <rootfiles>' +
@@ -341,8 +341,8 @@ export async function generateEpub(chapters: Chapter[], metadata: BookMetadata, 
     // 3. Add cover image if exists
     let coverFilename = '';
     if (metadata.cover) {
-        coverFilename = 'cover.jpg';
-        oebps.file(coverFilename, metadata.cover);
+      coverFilename = 'cover.jpg';
+      oebps.file(coverFilename, metadata.cover);
     }
 
     // 4. Create HTML files for each chapter
@@ -351,7 +351,7 @@ export async function generateEpub(chapters: Chapter[], metadata: BookMetadata, 
       // Sanitize and ensure valid XHTML using DOMParser strategy
       const safeContent = sanitizeContent(chapter.content);
       const safeTitle = escapeXml(chapter.title);
-      
+
       const htmlContent = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="en">
@@ -371,17 +371,17 @@ export async function generateEpub(chapters: Chapter[], metadata: BookMetadata, 
     });
 
     // 5. content.opf
-    const manifestItems = chapters.map((_, i) => 
+    const manifestItems = chapters.map((_, i) =>
       `<item id="chap${i + 1}" href="chapter_${i + 1}.xhtml" media-type="application/xhtml+xml"/>`
     ).join('\n    ');
-    
-    const spineItems = chapters.map((_, i) => 
+
+    const spineItems = chapters.map((_, i) =>
       `<itemref idref="chap${i + 1}"/>`
     ).join('\n    ');
 
-    const coverManifest = coverFilename 
-        ? `<item id="cover-image" href="${coverFilename}" media-type="image/jpeg" properties="cover-image"/>` 
-        : '';
+    const coverManifest = coverFilename
+      ? `<item id="cover-image" href="${coverFilename}" media-type="image/jpeg" properties="cover-image"/>`
+      : '';
 
     const opfContent = `<?xml version="1.0" encoding="UTF-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" unique-identifier="BookId" version="3.0">
@@ -430,7 +430,7 @@ export async function generateEpub(chapters: Chapter[], metadata: BookMetadata, 
     // Generate Blob
     const blob = await zip.generateAsync({ type: 'blob', mimeType: 'application/epub+zip' });
     saveAs(blob, `${metadata.title.replace(/[^a-z0-9]/gi, '_')}.epub`);
-    
+
     return true;
   } catch (error) {
     console.error("Error generating EPUB:", error);
@@ -457,20 +457,23 @@ async function fetchWithFallback(url: string): Promise<string> {
   try {
     // Check if we're in production (Netlify) or development (Express)
     const isNetlify = window.location.hostname.includes('netlify') || window.location.hostname.includes('.app');
-    const proxyUrl = isNetlify 
+    const proxyUrl = isNetlify
       ? `/.netlify/functions/proxy?url=${encodeURIComponent(url)}`
       : `/api/proxy?url=${encodeURIComponent(url)}`;
-    
+
     const response = await fetch(proxyUrl);
-    
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
       throw new Error(`Backend proxy error: ${errorData.error || response.status}`);
     }
-    
+
     const text = await response.text();
-    if (text) return text;
-    throw new Error("Backend proxy returned empty content");
+    // Verify we didn't just get the Vite local dev server's index.html fallback
+    if (text && !text.includes('src="/src/main.tsx"')) {
+      return text;
+    }
+    throw new Error("Backend proxy returned local index.html fallback");
   } catch (e) {
     errors.push((e as Error).message);
   }
@@ -498,7 +501,19 @@ async function fetchWithFallback(url: string): Promise<string> {
   } catch (e) {
     errors.push((e as Error).message);
   }
-  
+
+  // Strategy 4: Fallback to CodeTabs CORS proxy
+  try {
+    const proxyUrl = `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(url)}`;
+    const response = await fetch(proxyUrl);
+    if (!response.ok) throw new Error(`CodeTabs error: ${response.status}`);
+    const text = await response.text();
+    if (text) return text;
+    throw new Error("CodeTabs returned empty content");
+  } catch (e) {
+    errors.push((e as Error).message);
+  }
+
   throw new Error(`All proxies failed: ${errors.join(", ")}`);
 }
 
@@ -506,11 +521,11 @@ export async function mockFetchUrl(url: string): Promise<{ title: string; conten
   try {
     // 1. Fetch HTML via proxy with retries
     const html = await retry(() => fetchWithFallback(url));
-    
+
     // 2. Parse HTML
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, "text/html");
-    
+
     // Fix relative links before parsing
     const base = doc.createElement('base');
     base.href = url;
@@ -519,84 +534,119 @@ export async function mockFetchUrl(url: string): Promise<{ title: string; conten
     // 3. Use Readability to extract content
     // We clone the document because Readability mutates it
     const reader = new Readability(doc.cloneNode(true) as Document);
-    const article = reader.parse();
+    let article = reader.parse();
 
-    if (!article || !article.content) {
-       throw new Error("Readability failed to parse content");
+    if (!article || !article.content || article.content.trim().length < 200) {
+      // Enhanced site-specific fallbacks if Readability fails or returning too little
+      let fallbackContent = "";
+      let fallbackTitle = doc.title || "Unknown Chapter";
+
+      if (url.includes('archiveofourown.org')) {
+        const workskin = doc.querySelector('#workskin');
+        if (workskin) {
+          fallbackContent = workskin.innerHTML;
+        }
+      } else if (url.includes('royalroad.com')) {
+        const chapterContent = doc.querySelector('.chapter-content');
+        if (chapterContent) {
+          fallbackContent = chapterContent.innerHTML;
+        }
+      } else {
+        // Generic fallback: try to find an <article> tag or main content area
+        const articleTag = doc.querySelector('article') || doc.querySelector('main') || doc.querySelector('.content') || doc.querySelector('#content');
+        if (articleTag) {
+          fallbackContent = articleTag.innerHTML;
+        }
+      }
+
+      if (fallbackContent) {
+        article = {
+          title: fallbackTitle,
+          content: fallbackContent,
+          textContent: fallbackContent,
+          length: fallbackContent.length,
+          excerpt: '',
+          byline: '',
+          dir: '',
+          siteName: ''
+        };
+      } else if (!article || !article.content) {
+        throw new Error("Readability failed to parse content and no fallbacks succeeded");
+      }
     }
 
     // 4. Post-processing
     // Check specifically for Wattpad blocking
     if (url.includes('wattpad.com') && (article.content.includes('Log in') || article.content.includes('Sign up'))) {
-         throw new Error("Wattpad content is protected. Please use Manual Entry.");
+      throw new Error("Wattpad content is protected. Please use Manual Entry.");
     }
-    
+
     // Find Next Chapter Link
     let nextUrl: string | null = null;
 
     // 1. AO3 Specific (Most Reliable)
     if (url.includes('archiveofourown.org')) {
-        const ao3Next = doc.querySelector('li.chapter.next a');
-        if (ao3Next) {
-            nextUrl = (ao3Next as HTMLAnchorElement).href;
-        }
+      const ao3Next = doc.querySelector('li.chapter.next a');
+      if (ao3Next) {
+        nextUrl = (ao3Next as HTMLAnchorElement).href;
+      }
     }
 
     // 2. RoyalRoad Specific
     if (!nextUrl && url.includes('royalroad.com')) {
-        const rrNext = Array.from(doc.querySelectorAll('a')).find(a => 
-            a.textContent?.toLowerCase().includes('next chapter') && 
-            !a.textContent?.toLowerCase().includes('next part') 
-        );
-        if (rrNext) nextUrl = (rrNext as HTMLAnchorElement).href;
+      const rrNext = Array.from(doc.querySelectorAll('a')).find(a =>
+        a.textContent?.toLowerCase().includes('next chapter') &&
+        !a.textContent?.toLowerCase().includes('next part')
+      );
+      if (rrNext) nextUrl = (rrNext as HTMLAnchorElement).href;
     }
 
     // 3. Wattpad Specific
     if (!nextUrl && url.includes('wattpad.com')) {
-        // Wattpad usually splits chapters into pages. 
-        // We need to find the "Next Page" link if it exists to stitch content, 
-        // OR the "Next Part" link if we are at the end of a chapter.
-        
-        // However, since we can't easily stitch pages in this loop structure without major refactoring,
-        // we will prioritize finding the "Next Part" (next chapter).
-        // Wattpad often uses a link with class 'next-part-link' or similar.
-        
-        const wpNextPart = doc.querySelector('.next-part-link') || doc.querySelector('a.on-navigate-next');
-        if (wpNextPart) {
-            nextUrl = (wpNextPart as HTMLAnchorElement).href;
-        }
+      // Wattpad usually splits chapters into pages. 
+      // We need to find the "Next Page" link if it exists to stitch content, 
+      // OR the "Next Part" link if we are at the end of a chapter.
+
+      // However, since we can't easily stitch pages in this loop structure without major refactoring,
+      // we will prioritize finding the "Next Part" (next chapter).
+      // Wattpad often uses a link with class 'next-part-link' or similar.
+
+      const wpNextPart = doc.querySelector('.next-part-link') || doc.querySelector('a.on-navigate-next');
+      if (wpNextPart) {
+        nextUrl = (wpNextPart as HTMLAnchorElement).href;
+      }
     }
 
     // 4. General Heuristic (Fallback)
     if (!nextUrl) {
-        const links = Array.from(doc.querySelectorAll('a'));
-        for (const link of links) {
-            const text = (link.textContent || "").trim().toLowerCase();
-            
-            // Skip if text looks like it points to a different work
-            if (text.includes('work') || text.includes('series') || text.includes('book') || text.includes('volume')) {
-                continue;
-            }
+      const links = Array.from(doc.querySelectorAll('a'));
+      for (const link of links) {
+        const text = (link.textContent || "").trim().toLowerCase();
 
-            if (text === "next" || text === "next chapter" || text === "next >" || text === ">") {
-                nextUrl = link.href;
-                break;
-            }
+        // Skip if text looks like it points to a different work
+        if (text.includes('work') || text.includes('series') || text.includes('book') || text.includes('volume')) {
+          continue;
         }
+
+        if (text === "next" || text === "next chapter" || text === "next >" || text === ">") {
+          nextUrl = link.href;
+          break;
+        }
+      }
     }
 
     // Fix incomplete Wattpad content
     // Wattpad content is often in <pre> tags or specific containers that Readability might miss or truncate
     if (url.includes('wattpad.com')) {
-        const preContent = doc.querySelector('pre');
-        if (preContent) {
-            // If we found a pre tag, it likely contains the story text. 
-            // We should use this if Readability returned very little text.
-            const rawText = preContent.innerHTML;
-            if (rawText.length > article.content.length) {
-                article.content = rawText;
-            }
+      const preContent = doc.querySelector('pre');
+      if (preContent) {
+        // If we found a pre tag, it likely contains the story text. 
+        // We should use this if Readability returned very little text.
+        const rawText = preContent.innerHTML;
+        if (rawText.length > article.content.length) {
+          article.content = rawText;
         }
+      }
     }
 
     return {
@@ -607,15 +657,15 @@ export async function mockFetchUrl(url: string): Promise<{ title: string; conten
 
   } catch (error) {
     console.error("Fetch error:", error);
-    
+
     // Specific error message for user
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    
+
     // Custom message for Wattpad failures since they are common
     if (url.includes('wattpad.com')) {
-        throw new Error(`Wattpad blocks external tools. Please open the chapter, copy the text, and use the "Manual" tab.`);
+      throw new Error(`Wattpad blocks external tools. Please open the chapter, copy the text, and use the "Manual" tab.`);
     }
-    
+
     throw new Error(`Connection Failed: ${errorMessage}. Try manual entry.`);
   }
 }

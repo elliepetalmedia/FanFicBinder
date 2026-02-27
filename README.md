@@ -20,7 +20,13 @@ FanFicBinder is a 100% client-side web application that archives web serials, fa
   - Drop Caps: Stylish chapter openers
 - **Privacy First**: All data stays in your browser's memory. Nothing is uploaded or stored on any server.
 
-## 📦 How it Works
+## � Output Formats
+
+FanFicBinder supports two primary output formats:
+1. **EPUB (.epub):** A standard, highly compatible ebook format perfect for Kindle (via Send to Kindle), Kobo, Apple Books, and other dedicated e-readers.
+2. **Reader Mode HTML (.html):** A clean, semantic HTML file designed specifically for text-to-speech tools. It strips all styling distractions so accessibility tools like Microsoft Edge's "Read Aloud", Safari's "Listen to Page", and Speechify can effortlessly read the chapter text out loud.
+
+## �📦 How it Works
 
 1. **Fetch**: The app fetches the URL content directly from your browser.
 2. **Clean**: It uses Mozilla's `@mozilla/readability` engine to strip ads, sidebars, and comments.

@@ -1,15 +1,21 @@
 import { Link } from "wouter";
+import { useSEO } from "@/hooks/useSEO";
 
 export default function About() {
+  useSEO({
+    title: "About FanFicBinder - The Web Novel Downloader",
+    description: "Learn about FanFicBinder, a privacy-first web utility for downloading fanfiction and web serials to offline EPUB files."
+  });
+
   return (
     <div className="min-h-screen bg-background text-foreground p-8 font-sans">
       <div className="max-w-2xl mx-auto space-y-6">
         <Link href="/" className="text-primary hover:text-primary/80 no-underline">
           &larr; Back to Binder
         </Link>
-        
+
         <h1 className="text-4xl font-bold text-primary font-serif">About FanFicBinder</h1>
-        
+
         <div className="space-y-4 text-lg leading-relaxed">
           <p>
             FanFicBinder.com is a digital utility project published by <strong>Ellie Petal Media</strong>.
