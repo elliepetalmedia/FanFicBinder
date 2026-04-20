@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useCoverImage } from "@/hooks/useCoverImage";
 import {
   countWords,
   plainTextToChapterContent,
@@ -19,16 +20,17 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { Link } from "wouter";
-import { Book, Download, Trash2, Plus, Link as LinkIcon, FileText, Loader2, Image as ImageIcon, X, Settings, Headphones } from "lucide-react";
+import { Book, Download, Trash2, Plus, Link as LinkIcon, FileText, Loader2, Image as ImageIcon, X, Settings } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useSEO } from "@/hooks/useSEO";
 import { seoRoutes } from "@/lib/seo";
-
-const MAX_COVER_BYTES = 8 * 1024 * 1024;
+import { OutputControls } from "@/components/home/OutputControls";
+import { SeoArticle } from "@/components/home/SeoArticle";
+import { SiteFooter } from "@/components/home/SiteFooter";
+import { SiteHeader } from "@/components/home/SiteHeader";
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Something went wrong. Try manual entry.";
@@ -47,6 +49,18 @@ export default function Home() {
   useSEO(seoRoutes.home);
 
   const { toast } = useToast();
+  const {
+    coverImage,
+    coverPreview,
+    handleCoverUpload,
+    handleRemoveCover,
+  } = useCoverImage((error) => {
+    toast({
+      title: error.title,
+      description: error.description,
+      variant: "destructive",
+    });
+  });
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [urlInput, setUrlInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -61,8 +75,6 @@ export default function Home() {
   // Metadata State
   const [bookTitle, setBookTitle] = useState("My FanFic Binder");
   const [authorName, setAuthorName] = useState("Various Authors");
-  const [coverImage, setCoverImage] = useState<ArrayBuffer | null>(null);
-  const [coverPreview, setCoverPreview] = useState<string | null>(null);
 
   // Formatting State
   const [font, setFont] = useState("serif");
@@ -81,12 +93,6 @@ export default function Home() {
     () => chapters.reduce((acc, chapter) => acc + chapter.wordCount, 0),
     [chapters],
   );
-
-  useEffect(() => {
-    return () => {
-      if (coverPreview) URL.revokeObjectURL(coverPreview);
-    };
-  }, [coverPreview]);
 
   const handleFetchUrl = async () => {
     if (!canFetchUrl) return;
@@ -318,101 +324,9 @@ export default function Home() {
     }
   };
 
-  const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      toast({
-        title: "Invalid File",
-        description: "Please upload an image file.",
-        variant: "destructive",
-      });
-      e.currentTarget.value = "";
-      return;
-    }
-
-    if (file.size > MAX_COVER_BYTES) {
-      toast({
-        title: "Cover Too Large",
-        description: "Please upload an image under 8 MB.",
-        variant: "destructive",
-      });
-      e.currentTarget.value = "";
-      return;
-    }
-
-    // Create preview URL
-    const previewUrl = URL.createObjectURL(file);
-    if (coverPreview) URL.revokeObjectURL(coverPreview);
-    setCoverPreview(previewUrl);
-
-    // Read as ArrayBuffer for EPUB cover packaging
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      if (event.target?.result) {
-        setCoverImage(event.target.result as ArrayBuffer);
-      }
-    };
-    reader.readAsArrayBuffer(file);
-    e.currentTarget.value = "";
-  };
-
-  const handleRemoveCover = () => {
-    if (coverPreview) URL.revokeObjectURL(coverPreview);
-    setCoverPreview(null);
-    setCoverImage(null);
-  };
-
-  const outputControls = (
-    <div className="flex flex-col items-center gap-3">
-      <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Choose Output Format</span>
-      <div className="bg-secondary/20 p-1.5 rounded-lg flex flex-col sm:flex-row gap-1 w-full sm:w-auto">
-        <button
-          type="button"
-          onClick={() => setOutputFormat('epub')}
-          aria-pressed={outputFormat === 'epub'}
-          className={`px-5 py-3 rounded-md text-sm font-bold transition-all flex items-center justify-center gap-2 flex-1 sm:flex-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${outputFormat === 'epub' ? 'bg-background shadow-md text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-background/50'}`}
-        >
-          <Book className="w-5 h-5" />
-          EPUB
-        </button>
-        <button
-          type="button"
-          onClick={() => setOutputFormat('reader')}
-          aria-pressed={outputFormat === 'reader'}
-          className={`px-5 py-3 rounded-md text-sm font-bold transition-all flex items-center justify-center gap-2 flex-1 sm:flex-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${outputFormat === 'reader' ? 'bg-background shadow-md text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-background/50'}`}
-        >
-          <Headphones className="w-5 h-5 flex-shrink-0" />
-          <span className="flex flex-col items-start text-left leading-tight min-w-0">
-            <span className="truncate w-full">Reader Mode</span>
-            <span className="text-xs opacity-90 font-normal truncate w-full">Best for Read Aloud apps</span>
-          </span>
-        </button>
-      </div>
-    </div>
-  );
-
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground font-sans">
-      {/* Header */}
-      <header className="border-b border-border bg-card py-4 sticky top-0 z-10">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-3">
-              <div className="bg-primary/10 p-2 rounded-lg">
-                <Book className="w-6 h-6 text-primary" />
-              </div>
-              <h1 className="text-2xl font-bold tracking-tight font-serif text-foreground">
-                FanFic<span className="text-primary">Binder</span>
-              </h1>
-            </div>
-            <div className="text-sm text-muted-foreground hidden sm:block">
-              Build your offline reading file, chapter by chapter.
-            </div>
-          </div>
-        </div>
-      </header>
+      <SiteHeader />
 
       {/* Main Content */}
       <main className="flex-1 container mx-auto px-4 py-8">
@@ -681,7 +595,7 @@ export default function Home() {
                 </span>
               </h2>
               {chapters.length > 0 && (
-                <Button variant="ghost" size="sm" onClick={() => setChapters([])} className="text-destructive hover:text-destructive/80">
+                  <Button variant="ghost" size="sm" onClick={() => setChapters([])} className="text-destructive hover:text-destructive/80">
                   Clear All
                 </Button>
               )}
@@ -728,7 +642,10 @@ export default function Home() {
               </CardContent>
               {chapters.length > 0 && (
                 <div className="p-4 border-t border-border bg-card rounded-b-lg hidden lg:block space-y-4">
-                  {outputControls}
+                  <OutputControls
+                    outputFormat={outputFormat}
+                    onOutputFormatChange={setOutputFormat}
+                  />
 
                   <Button
                     size="lg"
@@ -752,7 +669,10 @@ export default function Home() {
         {/* Mobile Sticky Download Button */}
         {chapters.length > 0 && (
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-card border-t border-border lg:hidden z-50 shadow-xl space-y-4 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
-            {outputControls}
+            <OutputControls
+              outputFormat={outputFormat}
+              onOutputFormatChange={setOutputFormat}
+            />
             <Button
               size="lg"
               className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold shadow-lg shadow-primary/20"
@@ -769,55 +689,10 @@ export default function Home() {
           </div>
         )}
 
-        {/* SEO Article */}
-        <article className="max-w-3xl mx-auto mt-24 text-muted-foreground font-sans space-y-8">
-          <Separator className="bg-border" />
-          <div>
-            <h2 className="text-2xl font-bold text-foreground mb-4">Read Web Fiction Offline on E-readers</h2>
-            <p className="leading-relaxed mb-6">
-              FanFicBinder is a fanfiction downloader and web fiction to EPUB tool for readers who want long-form stories on Kindle, Kobo, Apple Books, or another e-reader. Add chapters from readable web pages or paste text manually, then export a clean offline file.
-            </p>
-
-            <h3 className="text-xl font-bold text-foreground mb-3">How it Works</h3>
-            <p className="leading-relaxed mb-4">
-              Most story pages are designed for browsers, not e-readers. FanFicBinder uses readability extraction to remove sidebars, ads, and comments where possible, leaving the chapter text for EPUB packaging.
-            </p>
-            <p className="leading-relaxed mb-4">
-              Use sequence fetching to collect multiple chapters in a row from supported sites such as AO3 or RoyalRoad, with manual entry available when a source blocks automated fetching.
-            </p>
-            <p className="leading-relaxed mb-4">
-              <strong>Reader Mode HTML:</strong> Prefer listening? Export your binder as a simple HTML file optimized for text-to-speech tools such as Edge Read Aloud, Safari Listen to Page, Speechify, or Voice Dream Reader.
-            </p>
-            <ul className="list-disc pl-6 space-y-2 mb-6">
-              <li>Amazon Kindle (via Send-to-Kindle)</li>
-              <li>Apple Books (iPad/iPhone)</li>
-              <li>Kobo & Nook</li>
-            </ul>
-
-            <h3 className="text-xl font-bold text-foreground mb-3">Why "Bind" Your Fics?</h3>
-            <p className="leading-relaxed">
-              Offline reading makes long stories easier to finish and keeps your favorite works available when you are away from a connection. EPUB export also gives you better typography, battery life, and organization than endless phone scrolling.
-            </p>
-            <p className="leading-relaxed mt-4">
-              Need help? Read the <Link href="/faq" className="text-primary hover:text-primary/80">FanFicBinder FAQ</Link> for URL fetching, manual entry, reader mode HTML, privacy, and e-reader transfer tips.
-            </p>
-          </div>
-
-          {/* Ad Slots removed */}
-        </article>
+        <SeoArticle />
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-border bg-card py-8 mt-12">
-        <div className="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
-          <p>&copy; 2025 Ellie Petal Media. All rights reserved.</p>
-          <nav className="flex gap-6">
-            <Link href="/about" className="hover:text-primary transition-colors">About</Link>
-            <Link href="/contact" className="hover:text-primary transition-colors">Contact</Link>
-            <Link href="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link>
-          </nav>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
