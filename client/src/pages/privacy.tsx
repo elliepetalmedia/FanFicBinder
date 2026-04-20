@@ -1,11 +1,9 @@
 import { Link } from "wouter";
 import { useSEO } from "@/hooks/useSEO";
+import { seoRoutes } from "@/lib/seo";
 
 export default function Privacy() {
-  useSEO({
-    title: "Privacy Policy - FanFicBinder",
-    description: "Read the Privacy Policy for FanFicBinder to understand how we process data locally and handle cookies."
-  });
+  useSEO(seoRoutes.privacy);
 
   return (
     <div className="min-h-screen bg-background text-foreground p-8 font-sans">

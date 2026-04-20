@@ -1,0 +1,23 @@
+import { Router as WouterRouter, Switch, Route } from "wouter";
+import { AppProviders } from "./AppProviders";
+import Home from "@/pages/Home";
+import About from "@/pages/about";
+import Contact from "@/pages/contact";
+import Privacy from "@/pages/privacy";
+import FAQ from "@/pages/faq";
+
+export function PrerenderApp({ path }: { path: string }) {
+  return (
+    <AppProviders>
+      <WouterRouter ssrPath={path}>
+        <Switch>
+          <Route path="/" component={Home} />
+          <Route path="/about" component={About} />
+          <Route path="/contact" component={Contact} />
+          <Route path="/privacy" component={Privacy} />
+          <Route path="/faq" component={FAQ} />
+        </Switch>
+      </WouterRouter>
+    </AppProviders>
+  );
+}

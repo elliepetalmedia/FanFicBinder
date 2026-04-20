@@ -1,7 +1,6 @@
 import { lazy, Suspense } from "react";
 import { Switch, Route } from "wouter";
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { AppProviders } from "./AppProviders";
 import Home from "@/pages/Home";
 
 const NotFound = lazy(() => import("@/pages/not-found"));
@@ -33,12 +32,11 @@ function Router() {
 
 function App() {
   return (
-    <TooltipProvider>
-      <Toaster />
+    <AppProviders>
       <Suspense fallback={<RouteFallback />}>
         <Router />
       </Suspense>
-    </TooltipProvider>
+    </AppProviders>
   );
 }
 

@@ -26,6 +26,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useSEO } from "@/hooks/useSEO";
+import { seoRoutes } from "@/lib/seo";
 
 const MAX_COVER_BYTES = 8 * 1024 * 1024;
 
@@ -43,10 +44,7 @@ function isLikelyValidUrl(value: string): boolean {
 }
 
 export default function Home() {
-  useSEO({
-    title: "FanFicBinder - Universal Web to EPUB Converter",
-    description: "The ultimate tool for archiving web serials, fanfiction, and articles from AO3, Wattpad, and RoyalRoad to EPUB or Reader Mode for offline reading on Kindle and e-readers."
-  });
+  useSEO(seoRoutes.home);
 
   const { toast } = useToast();
   const [chapters, setChapters] = useState<Chapter[]>([]);
@@ -410,7 +408,7 @@ export default function Home() {
               </h1>
             </div>
             <div className="text-sm text-muted-foreground hidden sm:block">
-              Build your ebook, chapter by chapter.
+              Build your offline reading file, chapter by chapter.
             </div>
           </div>
         </div>
@@ -420,10 +418,10 @@ export default function Home() {
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="mb-8 text-center w-full mx-auto space-y-1">
           <p className="text-lg text-foreground/90">
-            FanFicBinder helps you archive web serials and fanfiction into clean EPUBs or Reader Mode files for listening.
+            FanFicBinder turns web fiction, fanfiction, and articles into clean EPUBs or reader mode HTML for offline reading.
           </p>
           <p className="text-sm text-muted-foreground">
-            100% client-side processing—nothing is uploaded or stored anywhere. See below for details.
+            Your binder stays on your device; URL fetching is only used to retrieve pages you request.
           </p>
         </div>
 
@@ -434,11 +432,9 @@ export default function Home() {
             <Card className="border-border shadow-lg bg-card">
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="font-serif text-xl">Add Content</CardTitle>
-                <Link href="/faq">
-                  <a className="text-sm font-medium text-primary hover:text-primary/80 transition-colors underline px-2 py-1">
-                    Help & FAQ
-                  </a>
-                </Link>
+              <Link href="/faq" className="text-sm font-medium text-primary hover:text-primary/80 transition-colors underline px-2 py-1">
+                Help & FAQ
+              </Link>
               </CardHeader>
               <CardContent>
                 <Tabs defaultValue="url" className="w-full">
@@ -777,20 +773,20 @@ export default function Home() {
         <article className="max-w-3xl mx-auto mt-24 text-muted-foreground font-sans space-y-8">
           <Separator className="bg-border" />
           <div>
-            <h2 className="text-2xl font-bold text-foreground mb-4">Read Fanfiction Offline on Kindle & eReaders</h2>
+            <h2 className="text-2xl font-bold text-foreground mb-4">Read Web Fiction Offline on E-readers</h2>
             <p className="leading-relaxed mb-6">
-              FanFicBinder is the ultimate tool for archiving web serials, fanfiction, and articles. Whether you are saving a deleted fic from AO3, compiling a series from Wattpad, or just prefer reading long-form content on an e-ink screen, our tool makes it instant.
+              FanFicBinder is a fanfiction downloader and web fiction to EPUB tool for readers who want long-form stories on Kindle, Kobo, Apple Books, or another e-reader. Add chapters from readable web pages or paste text manually, then export a clean offline file.
             </p>
 
             <h3 className="text-xl font-bold text-foreground mb-3">How it Works</h3>
             <p className="leading-relaxed mb-4">
-              Most fanfiction sites are designed for browsers, not e-readers. We use Mozilla's advanced "Readability" engine to strip away the sidebars, ads, and comments, leaving only the story text. We then package it into a valid EPUB file.
+              Most story pages are designed for browsers, not e-readers. FanFicBinder uses readability extraction to remove sidebars, ads, and comments where possible, leaving the chapter text for EPUB packaging.
             </p>
             <p className="leading-relaxed mb-4">
-              <strong>New!</strong> Use our "Sequence Fetching" to automatically grab multiple chapters in a row from AO3 or RoyalRoad. Just check the box and watch it go.
+              Use sequence fetching to collect multiple chapters in a row from supported sites such as AO3 or RoyalRoad, with manual entry available when a source blocks automated fetching.
             </p>
             <p className="leading-relaxed mb-4">
-              <strong>Reader Mode:</strong> Prefer listening? Export your binder as a clean HTML file optimized for text-to-speech tools. Open it in Edge (Read Aloud), Safari (Listen to Page), or Speechify for a perfect audiobook experience.
+              <strong>Reader Mode HTML:</strong> Prefer listening? Export your binder as a simple HTML file optimized for text-to-speech tools such as Edge Read Aloud, Safari Listen to Page, Speechify, or Voice Dream Reader.
             </p>
             <ul className="list-disc pl-6 space-y-2 mb-6">
               <li>Amazon Kindle (via Send-to-Kindle)</li>
@@ -800,7 +796,10 @@ export default function Home() {
 
             <h3 className="text-xl font-bold text-foreground mb-3">Why "Bind" Your Fics?</h3>
             <p className="leading-relaxed">
-              Authors sometimes delete their work. By downloading an EPUB, you ensure you have a permanent offline copy of your favorite stories. Plus, reading on an e-reader reduces eye strain compared to scrolling on a phone.
+              Offline reading makes long stories easier to finish and keeps your favorite works available when you are away from a connection. EPUB export also gives you better typography, battery life, and organization than endless phone scrolling.
+            </p>
+            <p className="leading-relaxed mt-4">
+              Need help? Read the <Link href="/faq" className="text-primary hover:text-primary/80">FanFicBinder FAQ</Link> for URL fetching, manual entry, reader mode HTML, privacy, and e-reader transfer tips.
             </p>
           </div>
 

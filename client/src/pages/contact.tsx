@@ -1,11 +1,9 @@
 import { Link } from "wouter";
 import { useSEO } from "@/hooks/useSEO";
+import { seoRoutes } from "@/lib/seo";
 
 export default function Contact() {
-  useSEO({
-    title: "Contact FanFicBinder",
-    description: "Get in touch with FanFicBinder for support or business inquiries."
-  });
+  useSEO(seoRoutes.contact);
 
   return (
     <div className="min-h-screen bg-background text-foreground p-8 font-sans">

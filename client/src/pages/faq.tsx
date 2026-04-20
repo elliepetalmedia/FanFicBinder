@@ -2,12 +2,10 @@ import { Link } from "wouter";
 import { CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronLeft } from "lucide-react";
 import { useSEO } from "@/hooks/useSEO";
+import { seoRoutes } from "@/lib/seo";
 
 export default function FAQ() {
-  useSEO({
-    title: "FAQ - How to Use FanFicBinder",
-    description: "Frequently asked questions about using FanFicBinder to download web serials, AO3, Wattpad, and RoyalRoad to EPUB or Reader Mode."
-  });
+  useSEO(seoRoutes.faq);
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground font-sans">
@@ -15,11 +13,9 @@ export default function FAQ() {
       <header className="border-b border-border bg-card py-4 sticky top-0 z-10">
         <div className="container mx-auto px-4">
           <div className="flex items-center gap-3 mb-2">
-            <Link href="/">
-              <a className="flex items-center gap-1 text-primary hover:text-primary/80 transition-colors">
-                <ChevronLeft className="w-5 h-5" />
-                Back
-              </a>
+            <Link href="/" className="flex items-center gap-1 text-primary hover:text-primary/80 transition-colors">
+              <ChevronLeft className="w-5 h-5" />
+              Back
             </Link>
           </div>
           <h1 className="text-2xl font-bold tracking-tight font-serif text-foreground">
@@ -187,7 +183,7 @@ export default function FAQ() {
             <h3 className="text-xl font-bold font-serif text-foreground">Is my content private and secure?</h3>
             <div className="space-y-2 text-foreground/90">
               <p>
-                Yes. Everything happens 100% on your device. Your content is never uploaded to any server, shared with anyone, or stored anywhere. Only you have access to your EPUB files. For more details, see our <Link href="/privacy"><a className="text-primary hover:text-primary/80">Privacy Policy</a></Link>.
+                EPUB and reader mode generation happen on your device. The proxy is used only to fetch URLs you request, and FanFicBinder does not store your binder content. For more details, see our <Link href="/privacy" className="text-primary hover:text-primary/80">Privacy Policy</Link>.
               </p>
             </div>
           </section>
