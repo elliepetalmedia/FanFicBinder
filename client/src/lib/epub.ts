@@ -15,7 +15,9 @@ export interface BookMetadata {
   cover?: ArrayBuffer | null;
 }
 
-function escapeXml(unsafe: string): string {
+type ReadabilityArticle = NonNullable<ReturnType<Readability["parse"]>>;
+
+export function escapeXml(unsafe: string): string {
   if (!unsafe) return "";
   return unsafe.replace(/[<>&'"]/g, (c) => {
     switch (c) {
@@ -27,6 +29,20 @@ function escapeXml(unsafe: string): string {
       default: return c;
     }
   });
+}
+
+export function plainTextToChapterContent(text: string): string {
+  return text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => `<p>${escapeXml(line)}</p>`)
+    .join("");
+}
+
+export function countWords(text: string): number {
+  const words = text.trim().split(/\s+/).filter(Boolean);
+  return words.length;
 }
 
 // Helper to ensure content is valid XHTML body content using DOM parser
@@ -45,6 +61,21 @@ function sanitizeContent(content: string): string {
     unwantedSelectors.forEach(selector => {
       const elements = body.querySelectorAll(selector);
       elements.forEach(el => el.remove());
+    });
+
+    body.querySelectorAll("*").forEach((element) => {
+      Array.from(element.attributes).forEach((attribute) => {
+        const name = attribute.name.toLowerCase();
+        const value = attribute.value.trim().toLowerCase();
+
+        if (
+          name.startsWith("on") ||
+          value.startsWith("javascript:") ||
+          value.startsWith("data:text/html")
+        ) {
+          element.removeAttribute(attribute.name);
+        }
+      });
     });
 
     // Ensure images are proper
@@ -438,89 +469,128 @@ export async function generateEpub(chapters: Chapter[], metadata: BookMetadata, 
   }
 }
 
-// Retry logic wrapper
-async function retry<T>(fn: () => Promise<T>, retries = 3, delay = 1000): Promise<T> {
+function validateFetchUrl(url: string): URL {
   try {
-    return await fn();
+    const parsed = new URL(url);
+    if (!["http:", "https:"].includes(parsed.protocol)) {
+      throw new Error("Only HTTP and HTTPS URLs can be fetched.");
+    }
+    return parsed;
   } catch (error) {
-    if (retries <= 0) throw error;
-    await new Promise(resolve => setTimeout(resolve, delay));
-    return retry(fn, retries - 1, delay * 1.5); // Exponential backoff
+    if (error instanceof Error && error.message.includes("HTTP")) throw error;
+    throw new Error("Enter a valid URL that starts with http:// or https://.");
   }
 }
 
-// Fetch with server-side proxy
-async function fetchWithFallback(url: string): Promise<string> {
-  const errors: string[] = [];
+async function readProxyError(response: Response): Promise<string> {
+  const contentType = response.headers.get("content-type") || "";
 
-  // Strategy 1: Use our Netlify Function proxy (production) or Express proxy (development)
-  try {
-    // Check if we're in production (Netlify) or development (Express)
-    const isNetlify = window.location.hostname.includes('netlify') || window.location.hostname.includes('.app');
-    const proxyUrl = isNetlify
-      ? `/.netlify/functions/proxy?url=${encodeURIComponent(url)}`
-      : `/api/proxy?url=${encodeURIComponent(url)}`;
+  if (contentType.includes("application/json")) {
+    const data = await response.json().catch(() => null);
+    if (data && typeof data.error === "string") return data.error;
+  }
 
-    const response = await fetch(proxyUrl);
+  return response.statusText || `HTTP ${response.status}`;
+}
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
-      throw new Error(`Backend proxy error: ${errorData.error || response.status}`);
+// Fetch with the first-party proxy only. Netlify rewrites /api/proxy to the function.
+async function fetchViaFirstPartyProxy(url: string): Promise<string> {
+  const parsed = validateFetchUrl(url);
+  const response = await fetch(`/api/proxy?url=${encodeURIComponent(parsed.toString())}`);
+
+  if (!response.ok) {
+    throw new Error(await readProxyError(response));
+  }
+
+  const text = await response.text();
+  if (!text.trim()) {
+    throw new Error("The source page returned no readable content.");
+  }
+
+  if (text.includes('src="/src/main.tsx"')) {
+    throw new Error("The local proxy is not available. Run the full dev server or deploy the Netlify function.");
+  }
+
+  return text;
+}
+
+function fallbackArticle(
+  doc: Document,
+  title: string,
+  content: string,
+): ReadabilityArticle {
+  return {
+    title,
+    content,
+    textContent: content.replace(/<[^>]*>/g, " "),
+    length: content.length,
+    excerpt: "",
+    byline: "",
+    dir: doc.dir || "",
+    siteName: "",
+    lang: doc.documentElement.lang || "en",
+    publishedTime: null,
+  };
+}
+
+function findFallbackContent(doc: Document, url: string): string {
+  if (url.includes("archiveofourown.org")) {
+    return doc.querySelector("#workskin")?.innerHTML || "";
+  }
+
+  if (url.includes("royalroad.com")) {
+    return doc.querySelector(".chapter-content")?.innerHTML || "";
+  }
+
+  const articleTag =
+    doc.querySelector("article") ||
+    doc.querySelector("main") ||
+    doc.querySelector(".content") ||
+    doc.querySelector("#content");
+
+  return articleTag?.innerHTML || "";
+}
+
+function findNextChapterUrl(doc: Document, url: string): string | null {
+  if (url.includes("archiveofourown.org")) {
+    const ao3Next = doc.querySelector("li.chapter.next a");
+    if (ao3Next) return (ao3Next as HTMLAnchorElement).href;
+  }
+
+  if (url.includes("royalroad.com")) {
+    const rrNext = Array.from(doc.querySelectorAll("a")).find(a =>
+      a.textContent?.toLowerCase().includes("next chapter") &&
+      !a.textContent?.toLowerCase().includes("next part")
+    );
+    if (rrNext) return (rrNext as HTMLAnchorElement).href;
+  }
+
+  const links = Array.from(doc.querySelectorAll("a"));
+  for (const link of links) {
+    const text = (link.textContent || "").trim().toLowerCase();
+
+    if (text.includes("work") || text.includes("series") || text.includes("book") || text.includes("volume")) {
+      continue;
     }
 
-    const text = await response.text();
-    // Verify we didn't just get the Vite local dev server's index.html fallback
-    if (text && !text.includes('src="/src/main.tsx"')) {
-      return text;
+    if (text === "next" || text === "next chapter" || text === "next >" || text === ">") {
+      return link.href;
     }
-    throw new Error("Backend proxy returned local index.html fallback");
-  } catch (e) {
-    errors.push((e as Error).message);
   }
 
-  // Strategy 2: Fallback to AllOrigins (public CORS proxy)
-  try {
-    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-    const response = await fetch(proxyUrl);
-    if (!response.ok) throw new Error(`AllOrigins error: ${response.status}`);
-    const data = await response.json();
-    if (data.contents) return data.contents;
-    throw new Error("AllOrigins returned empty content");
-  } catch (e) {
-    errors.push((e as Error).message);
-  }
-
-  // Strategy 3: Fallback to Corsproxy.io
-  try {
-    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
-    const response = await fetch(proxyUrl);
-    if (!response.ok) throw new Error(`CorsProxy error: ${response.status}`);
-    const text = await response.text();
-    if (text) return text;
-    throw new Error("CorsProxy returned empty content");
-  } catch (e) {
-    errors.push((e as Error).message);
-  }
-
-  // Strategy 4: Fallback to CodeTabs CORS proxy
-  try {
-    const proxyUrl = `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(url)}`;
-    const response = await fetch(proxyUrl);
-    if (!response.ok) throw new Error(`CodeTabs error: ${response.status}`);
-    const text = await response.text();
-    if (text) return text;
-    throw new Error("CodeTabs returned empty content");
-  } catch (e) {
-    errors.push((e as Error).message);
-  }
-
-  throw new Error(`All proxies failed: ${errors.join(", ")}`);
+  return null;
 }
 
 export async function mockFetchUrl(url: string): Promise<{ title: string; content: string; nextUrl?: string | null }> {
   try {
-    // 1. Fetch HTML via proxy with retries
-    const html = await retry(() => fetchWithFallback(url));
+    const parsedUrl = validateFetchUrl(url);
+
+    if (parsedUrl.hostname.includes("wattpad.com")) {
+      throw new Error(`Wattpad blocks external tools. Please open the chapter, copy the text, and use the "Manual" tab.`);
+    }
+
+    // 1. Fetch HTML via the first-party proxy
+    const html = await fetchViaFirstPartyProxy(parsedUrl.toString());
 
     // 2. Parse HTML
     const parser = new DOMParser();
@@ -538,120 +608,48 @@ export async function mockFetchUrl(url: string): Promise<{ title: string; conten
 
     if (!article || !article.content || article.content.trim().length < 200) {
       // Enhanced site-specific fallbacks if Readability fails or returning too little
-      let fallbackContent = "";
-      let fallbackTitle = doc.title || "Unknown Chapter";
-
-      if (url.includes('archiveofourown.org')) {
-        const workskin = doc.querySelector('#workskin');
-        if (workskin) {
-          fallbackContent = workskin.innerHTML;
-        }
-      } else if (url.includes('royalroad.com')) {
-        const chapterContent = doc.querySelector('.chapter-content');
-        if (chapterContent) {
-          fallbackContent = chapterContent.innerHTML;
-        }
-      } else {
-        // Generic fallback: try to find an <article> tag or main content area
-        const articleTag = doc.querySelector('article') || doc.querySelector('main') || doc.querySelector('.content') || doc.querySelector('#content');
-        if (articleTag) {
-          fallbackContent = articleTag.innerHTML;
-        }
-      }
+      const fallbackContent = findFallbackContent(doc, parsedUrl.toString());
+      const fallbackTitle = doc.title || "Unknown Chapter";
 
       if (fallbackContent) {
-        article = {
-          title: fallbackTitle,
-          content: fallbackContent,
-          textContent: fallbackContent,
-          length: fallbackContent.length,
-          excerpt: '',
-          byline: '',
-          dir: '',
-          siteName: ''
-        };
+        article = fallbackArticle(doc, fallbackTitle, fallbackContent);
       } else if (!article || !article.content) {
-        throw new Error("Readability failed to parse content and no fallbacks succeeded");
+        throw new Error("No readable story text was found on that page.");
       }
     }
 
+    if (!article || !article.content) {
+      throw new Error("No readable story text was found on that page.");
+    }
+
+    let articleContent = article.content;
+
     // 4. Post-processing
     // Check specifically for Wattpad blocking
-    if (url.includes('wattpad.com') && (article.content.includes('Log in') || article.content.includes('Sign up'))) {
+    if (parsedUrl.hostname.includes('wattpad.com') && (articleContent.includes('Log in') || articleContent.includes('Sign up'))) {
       throw new Error("Wattpad content is protected. Please use Manual Entry.");
     }
 
     // Find Next Chapter Link
-    let nextUrl: string | null = null;
-
-    // 1. AO3 Specific (Most Reliable)
-    if (url.includes('archiveofourown.org')) {
-      const ao3Next = doc.querySelector('li.chapter.next a');
-      if (ao3Next) {
-        nextUrl = (ao3Next as HTMLAnchorElement).href;
-      }
-    }
-
-    // 2. RoyalRoad Specific
-    if (!nextUrl && url.includes('royalroad.com')) {
-      const rrNext = Array.from(doc.querySelectorAll('a')).find(a =>
-        a.textContent?.toLowerCase().includes('next chapter') &&
-        !a.textContent?.toLowerCase().includes('next part')
-      );
-      if (rrNext) nextUrl = (rrNext as HTMLAnchorElement).href;
-    }
-
-    // 3. Wattpad Specific
-    if (!nextUrl && url.includes('wattpad.com')) {
-      // Wattpad usually splits chapters into pages. 
-      // We need to find the "Next Page" link if it exists to stitch content, 
-      // OR the "Next Part" link if we are at the end of a chapter.
-
-      // However, since we can't easily stitch pages in this loop structure without major refactoring,
-      // we will prioritize finding the "Next Part" (next chapter).
-      // Wattpad often uses a link with class 'next-part-link' or similar.
-
-      const wpNextPart = doc.querySelector('.next-part-link') || doc.querySelector('a.on-navigate-next');
-      if (wpNextPart) {
-        nextUrl = (wpNextPart as HTMLAnchorElement).href;
-      }
-    }
-
-    // 4. General Heuristic (Fallback)
-    if (!nextUrl) {
-      const links = Array.from(doc.querySelectorAll('a'));
-      for (const link of links) {
-        const text = (link.textContent || "").trim().toLowerCase();
-
-        // Skip if text looks like it points to a different work
-        if (text.includes('work') || text.includes('series') || text.includes('book') || text.includes('volume')) {
-          continue;
-        }
-
-        if (text === "next" || text === "next chapter" || text === "next >" || text === ">") {
-          nextUrl = link.href;
-          break;
-        }
-      }
-    }
+    const nextUrl = findNextChapterUrl(doc, parsedUrl.toString());
 
     // Fix incomplete Wattpad content
     // Wattpad content is often in <pre> tags or specific containers that Readability might miss or truncate
-    if (url.includes('wattpad.com')) {
+    if (parsedUrl.hostname.includes('wattpad.com')) {
       const preContent = doc.querySelector('pre');
       if (preContent) {
         // If we found a pre tag, it likely contains the story text. 
         // We should use this if Readability returned very little text.
         const rawText = preContent.innerHTML;
-        if (rawText.length > article.content.length) {
-          article.content = rawText;
+        if (rawText.length > articleContent.length) {
+          articleContent = rawText;
         }
       }
     }
 
     return {
       title: article.title || "Unknown Chapter",
-      content: article.content,
+      content: articleContent,
       nextUrl: nextUrl
     };
 
@@ -666,7 +664,7 @@ export async function mockFetchUrl(url: string): Promise<{ title: string; conten
       throw new Error(`Wattpad blocks external tools. Please open the chapter, copy the text, and use the "Manual" tab.`);
     }
 
-    throw new Error(`Connection Failed: ${errorMessage}. Try manual entry.`);
+    throw new Error(`${errorMessage} Try manual entry if the source blocks fetching.`);
   }
 }
 

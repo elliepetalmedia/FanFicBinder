@@ -1,6 +1,13 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { generateEpub, generateReaderModeHTML, mockFetchUrl, type Chapter } from "@/lib/epub";
+import {
+  countWords,
+  generateEpub,
+  generateReaderModeHTML,
+  mockFetchUrl,
+  plainTextToChapterContent,
+  type Chapter,
+} from "@/lib/epub";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,6 +29,21 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useSEO } from "@/hooks/useSEO";
+
+const MAX_COVER_BYTES = 8 * 1024 * 1024;
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Something went wrong. Try manual entry.";
+}
+
+function isLikelyValidUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
 
 export default function Home() {
   useSEO({
@@ -55,26 +77,39 @@ export default function Home() {
   const [fetchProgress, setFetchProgress] = useState<{ current: number; total: string }>({ current: 0, total: "?" });
   const [isFetchingSequence, setIsFetchingSequence] = useState(false);
   const [abortController, setAbortController] = useState<AbortController | null>(null);
+  const trimmedUrlInput = urlInput.trim();
+  const canFetchUrl = isLikelyValidUrl(trimmedUrlInput) && !isLoading && !isFetchingSequence;
+  const canSaveManualChapter = manualTitle.trim().length > 0 && manualContent.trim().length > 0;
+  const totalWords = useMemo(
+    () => chapters.reduce((acc, chapter) => acc + chapter.wordCount, 0),
+    [chapters],
+  );
+
+  useEffect(() => {
+    return () => {
+      if (coverPreview) URL.revokeObjectURL(coverPreview);
+    };
+  }, [coverPreview]);
 
   const handleFetchUrl = async () => {
-    if (!urlInput) return;
+    if (!canFetchUrl) return;
 
     if (isMultiChapter) {
-      handleFetchSequence();
+      await handleFetchSequence();
       return;
     }
 
     setIsLoading(true);
     try {
-      const result = await mockFetchUrl(urlInput);
+      const result = await mockFetchUrl(trimmedUrlInput);
       const newChapter: Chapter = {
         id: Date.now().toString(),
         title: result.title,
         content: result.content,
-        wordCount: result.content.split(/\s+/).length,
+        wordCount: countWords(result.content),
       };
 
-      setChapters([...chapters, newChapter]);
+      setChapters(prev => [...prev, newChapter]);
       setUrlInput("");
       toast({
         title: "Chapter Added",
@@ -82,8 +117,8 @@ export default function Home() {
       });
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to fetch URL. Please try again.",
+        title: "Fetch Failed",
+        description: getErrorMessage(error),
         variant: "destructive",
       });
     } finally {
@@ -92,14 +127,14 @@ export default function Home() {
   };
 
   const handleFetchSequence = async () => {
-    if (!urlInput) return;
+    if (!canFetchUrl) return;
 
     setIsFetchingSequence(true);
     setFetchProgress({ current: 0, total: "?" });
     const controller = new AbortController();
     setAbortController(controller);
 
-    let currentUrl = urlInput;
+    let currentUrl = trimmedUrlInput;
     let chapterCount = 0;
 
     try {
@@ -116,8 +151,8 @@ export default function Home() {
           try {
             result = await mockFetchUrl(currentUrl);
             break; // Success
-          } catch (err: any) {
-            const errorMsg = err.message || "";
+          } catch (err: unknown) {
+            const errorMsg = getErrorMessage(err);
             if (errorMsg.includes("429") || errorMsg.includes("503") || errorMsg.includes("Too Many Requests")) {
               // Rate limit hit - wait 10s
               toast({
@@ -140,7 +175,7 @@ export default function Home() {
           id: Date.now().toString() + Math.random(),
           title: result.title,
           content: result.content,
-          wordCount: result.content.split(/\s+/).length,
+          wordCount: countWords(result.content),
         };
 
         setChapters(prev => [...prev, newChapter]); // Functional update to ensure fresh state
@@ -178,7 +213,7 @@ export default function Home() {
       if (!controller.signal.aborted) {
         toast({
           title: "Sequence Interrupted",
-          description: "Failed to fetch a chapter. Stopping sequence.",
+          description: getErrorMessage(error),
           variant: "destructive",
         });
       }
@@ -200,13 +235,13 @@ export default function Home() {
   };
 
   const handleAddManual = () => {
-    if (!manualTitle || !manualContent) return;
+    if (!canSaveManualChapter) return;
 
     const newChapter: Chapter = {
       id: Date.now().toString(),
-      title: manualTitle,
-      content: manualContent.split('\n').filter(line => line.trim()).map(line => `<p>${line}</p>`).join(''),
-      wordCount: manualContent.split(/\s+/).length,
+      title: manualTitle.trim(),
+      content: plainTextToChapterContent(manualContent),
+      wordCount: countWords(manualContent),
     };
 
     setChapters([...chapters, newChapter]);
@@ -262,7 +297,7 @@ export default function Home() {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to generate file.",
+        description: getErrorMessage(error),
         variant: "destructive",
       });
     }
@@ -278,11 +313,23 @@ export default function Home() {
         description: "Please upload an image file.",
         variant: "destructive",
       });
+      e.currentTarget.value = "";
+      return;
+    }
+
+    if (file.size > MAX_COVER_BYTES) {
+      toast({
+        title: "Cover Too Large",
+        description: "Please upload an image under 8 MB.",
+        variant: "destructive",
+      });
+      e.currentTarget.value = "";
       return;
     }
 
     // Create preview URL
     const previewUrl = URL.createObjectURL(file);
+    if (coverPreview) URL.revokeObjectURL(coverPreview);
     setCoverPreview(previewUrl);
 
     // Read as ArrayBuffer for jEpub
@@ -293,6 +340,7 @@ export default function Home() {
       }
     };
     reader.readAsArrayBuffer(file);
+    e.currentTarget.value = "";
   };
 
   const handleRemoveCover = () => {
@@ -300,6 +348,35 @@ export default function Home() {
     setCoverPreview(null);
     setCoverImage(null);
   };
+
+  const outputControls = (
+    <div className="flex flex-col items-center gap-3">
+      <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Choose Output Format</span>
+      <div className="bg-secondary/20 p-1.5 rounded-lg flex flex-col sm:flex-row gap-1 w-full sm:w-auto">
+        <button
+          type="button"
+          onClick={() => setOutputFormat('epub')}
+          aria-pressed={outputFormat === 'epub'}
+          className={`px-5 py-3 rounded-md text-sm font-bold transition-all flex items-center justify-center gap-2 flex-1 sm:flex-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${outputFormat === 'epub' ? 'bg-background shadow-md text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-background/50'}`}
+        >
+          <Book className="w-5 h-5" />
+          EPUB
+        </button>
+        <button
+          type="button"
+          onClick={() => setOutputFormat('reader')}
+          aria-pressed={outputFormat === 'reader'}
+          className={`px-5 py-3 rounded-md text-sm font-bold transition-all flex items-center justify-center gap-2 flex-1 sm:flex-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${outputFormat === 'reader' ? 'bg-background shadow-md text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-background/50'}`}
+        >
+          <Headphones className="w-5 h-5 flex-shrink-0" />
+          <span className="flex flex-col items-start text-left leading-tight min-w-0">
+            <span className="truncate w-full">Reader Mode</span>
+            <span className="text-xs opacity-90 font-normal truncate w-full">Best for Read Aloud apps</span>
+          </span>
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground font-sans">
@@ -363,10 +440,13 @@ export default function Home() {
                           value={urlInput}
                           onChange={(e) => setUrlInput(e.target.value)}
                           className="bg-input border-border text-foreground"
+                          aria-invalid={trimmedUrlInput.length > 0 && !isLikelyValidUrl(trimmedUrlInput)}
                         />
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        Supports AO3, Wattpad, RoyalRoad, and most article sites.
+                      <p className="text-xs text-muted-foreground" aria-live="polite">
+                        {trimmedUrlInput.length > 0 && !isLikelyValidUrl(trimmedUrlInput)
+                          ? "Enter a full URL starting with http:// or https://."
+                          : "Best with AO3, RoyalRoad, and readable article pages. Wattpad usually needs manual entry."}
                       </p>
                       <div className="flex items-center space-x-2 pt-1">
                         <Checkbox
@@ -444,13 +524,13 @@ export default function Home() {
                     ) : (
                       <Button
                         onClick={handleFetchUrl}
-                        disabled={isLoading || !urlInput}
+                        disabled={!canFetchUrl}
                         className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
                       >
-                        {isLoading ? (
+                        {isLoading || isFetchingSequence ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Fetching...
+                            {isMultiChapter ? `Fetching chapter ${fetchProgress.current || 1}...` : "Fetching..."}
                           </>
                         ) : (
                           <>
@@ -498,7 +578,11 @@ export default function Home() {
                                 className="min-h-[300px] font-serif bg-input border-border"
                               />
                             </div>
-                            <Button onClick={handleAddManual} className="w-full bg-primary text-primary-foreground">
+                            <Button
+                              onClick={handleAddManual}
+                              disabled={!canSaveManualChapter}
+                              className="w-full bg-primary text-primary-foreground"
+                            >
                               Save Chapter
                             </Button>
                           </div>
@@ -549,6 +633,7 @@ export default function Home() {
                           size="icon"
                           onClick={handleRemoveCover}
                           className="h-8 w-8"
+                          aria-label="Remove cover image"
                         >
                           <X className="w-4 h-4" />
                         </Button>
@@ -603,7 +688,7 @@ export default function Home() {
                   <ScrollArea className="flex-1 h-[500px]">
                     <div className="divide-y divide-border">
                       {chapters.map((chapter, index) => (
-                        <div key={chapter.id} className="p-4 flex items-center justify-between group hover:bg-accent/5 transition-colors">
+                        <div key={chapter.id} className="p-4 flex items-center justify-between gap-4 group hover:bg-accent/5 transition-colors">
                           <div className="flex items-start gap-4">
                             <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-xs font-bold text-muted-foreground">
                               {index + 1}
@@ -617,7 +702,8 @@ export default function Home() {
                             variant="ghost"
                             size="icon"
                             onClick={() => handleRemoveChapter(chapter.id)}
-                            className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
+                            className="text-muted-foreground hover:text-destructive transition-all sm:opacity-70 sm:group-hover:opacity-100"
+                            aria-label={`Remove ${chapter.title}`}
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -629,30 +715,7 @@ export default function Home() {
               </CardContent>
               {chapters.length > 0 && (
                 <div className="p-4 border-t border-border bg-card rounded-b-lg hidden lg:block space-y-4">
-
-                  {/* Output Format Selector */}
-                  <div className="flex flex-col items-center gap-3">
-                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Choose Output Format:</span>
-                    <div className="bg-secondary/20 p-1.5 rounded-xl flex flex-col sm:flex-row gap-1 w-full sm:w-auto">
-                      <button
-                        onClick={() => setOutputFormat('epub')}
-                        className={`px-6 py-3 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 flex-1 sm:flex-none ${outputFormat === 'epub' ? 'bg-background shadow-md text-primary scale-[1.02]' : 'text-muted-foreground hover:text-foreground hover:bg-background/50'}`}
-                      >
-                        <Book className="w-5 h-5" />
-                        EPUB
-                      </button>
-                      <button
-                        onClick={() => setOutputFormat('reader')}
-                        className={`px-6 py-3 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 flex-1 sm:flex-none ${outputFormat === 'reader' ? 'bg-background shadow-md text-primary scale-[1.02]' : 'text-muted-foreground hover:text-foreground hover:bg-background/50'}`}
-                      >
-                        <Headphones className="w-5 h-5" />
-                        <span className="flex flex-col items-start text-left leading-tight">
-                          <span>Reader Mode (HTML)</span>
-                          <span className="text-xs opacity-90 font-normal">Best for VoiceOver, Speechify, or Edge Read Aloud</span>
-                        </span>
-                      </button>
-                    </div>
-                  </div>
+                  {outputControls}
 
                   <Button
                     size="lg"
@@ -660,7 +723,7 @@ export default function Home() {
                     onClick={handleDownload}
                   >
                     <Download className="mr-2 h-5 w-5" />
-                    Download {outputFormat === 'epub' ? 'EPUB' : 'Reader Mode'} ({chapters.reduce((acc, c) => acc + c.wordCount, 0).toLocaleString()} words)
+                    Download {outputFormat === 'epub' ? 'EPUB' : 'Reader Mode'} ({totalWords.toLocaleString()} words)
                   </Button>
                 </div>
               )}
@@ -670,29 +733,8 @@ export default function Home() {
 
         {/* Mobile Sticky Download Button */}
         {chapters.length > 0 && (
-          <div className="fixed bottom-0 left-0 right-0 p-4 bg-card border-t border-border lg:hidden z-50 shadow-xl space-y-4 pb-8">
-            <div className="flex flex-col items-center gap-3">
-              <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Choose Output Format:</span>
-              <div className="bg-secondary/20 p-1.5 rounded-xl flex gap-1 w-full">
-                <button
-                  onClick={() => setOutputFormat('epub')}
-                  className={`flex-1 px-4 py-3 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${outputFormat === 'epub' ? 'bg-background shadow-md text-primary scale-[1.02]' : 'text-muted-foreground hover:text-foreground hover:bg-background/50'}`}
-                >
-                  <Book className="w-5 h-5" />
-                  EPUB
-                </button>
-                <button
-                  onClick={() => setOutputFormat('reader')}
-                  className={`flex-[2] px-4 py-3 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${outputFormat === 'reader' ? 'bg-background shadow-md text-primary scale-[1.02]' : 'text-muted-foreground hover:text-foreground hover:bg-background/50'}`}
-                >
-                  <Headphones className="w-5 h-5 flex-shrink-0" />
-                  <span className="flex flex-col items-start text-left leading-tight overflow-hidden">
-                    <span className="truncate w-full">Reader Mode</span>
-                    <span className="text-xs opacity-90 font-normal truncate w-full">Best for VoiceOver, Speechify, or Edge Read Aloud</span>
-                  </span>
-                </button>
-              </div>
-            </div>
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-card border-t border-border lg:hidden z-50 shadow-xl space-y-4 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
+            {outputControls}
             <Button
               size="lg"
               className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold shadow-lg shadow-primary/20"
