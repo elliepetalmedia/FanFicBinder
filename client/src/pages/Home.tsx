@@ -2,12 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import {
   countWords,
-  generateEpub,
-  generateReaderModeHTML,
-  mockFetchUrl,
   plainTextToChapterContent,
   type Chapter,
-} from "@/lib/epub";
+} from "@/lib/chapter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -55,6 +52,8 @@ export default function Home() {
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [urlInput, setUrlInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [toolStatus, setToolStatus] = useState<string | null>(null);
 
   // Manual Entry State
   const [manualTitle, setManualTitle] = useState("");
@@ -100,7 +99,10 @@ export default function Home() {
     }
 
     setIsLoading(true);
+    setToolStatus("Loading fetch tools...");
     try {
+      const { mockFetchUrl } = await import("@/lib/epub");
+      setToolStatus("Fetching chapter...");
       const result = await mockFetchUrl(trimmedUrlInput);
       const newChapter: Chapter = {
         id: Date.now().toString(),
@@ -122,6 +124,7 @@ export default function Home() {
         variant: "destructive",
       });
     } finally {
+      setToolStatus(null);
       setIsLoading(false);
     }
   };
@@ -130,6 +133,7 @@ export default function Home() {
     if (!canFetchUrl) return;
 
     setIsFetchingSequence(true);
+    setToolStatus("Loading fetch tools...");
     setFetchProgress({ current: 0, total: "?" });
     const controller = new AbortController();
     setAbortController(controller);
@@ -138,6 +142,8 @@ export default function Home() {
     let chapterCount = 0;
 
     try {
+      const { mockFetchUrl } = await import("@/lib/epub");
+      setToolStatus("Fetching chapter sequence...");
       while (currentUrl && !controller.signal.aborted) {
         chapterCount++;
         setFetchProgress(prev => ({ ...prev, current: chapterCount }));
@@ -218,6 +224,7 @@ export default function Home() {
         });
       }
     } finally {
+      setToolStatus(null);
       setIsFetchingSequence(false);
       setAbortController(null);
     }
@@ -268,8 +275,12 @@ export default function Home() {
       return;
     }
 
+    setIsExporting(true);
     try {
       if (outputFormat === 'reader') {
+        setToolStatus("Loading Reader Mode exporter...");
+        const { generateReaderModeHTML } = await import("@/lib/epub");
+        setToolStatus("Generating Reader Mode file...");
         await generateReaderModeHTML(chapters, {
           title: bookTitle,
           author: authorName,
@@ -280,6 +291,9 @@ export default function Home() {
           description: "Your file has been generated.",
         });
       } else {
+        setToolStatus("Loading EPUB exporter...");
+        const { generateEpub } = await import("@/lib/epub");
+        setToolStatus("Generating EPUB...");
         await generateEpub(chapters, {
           title: bookTitle,
           author: authorName,
@@ -300,6 +314,9 @@ export default function Home() {
         description: getErrorMessage(error),
         variant: "destructive",
       });
+    } finally {
+      setToolStatus(null);
+      setIsExporting(false);
     }
   };
 
@@ -332,7 +349,7 @@ export default function Home() {
     if (coverPreview) URL.revokeObjectURL(coverPreview);
     setCoverPreview(previewUrl);
 
-    // Read as ArrayBuffer for jEpub
+    // Read as ArrayBuffer for EPUB cover packaging
     const reader = new FileReader();
     reader.onload = (event) => {
       if (event.target?.result) {
@@ -530,7 +547,7 @@ export default function Home() {
                         {isLoading || isFetchingSequence ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            {isMultiChapter ? `Fetching chapter ${fetchProgress.current || 1}...` : "Fetching..."}
+                            {toolStatus || (isMultiChapter ? `Fetching chapter ${fetchProgress.current || 1}...` : "Fetching...")}
                           </>
                         ) : (
                           <>
@@ -721,9 +738,14 @@ export default function Home() {
                     size="lg"
                     className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold shadow-lg shadow-primary/20"
                     onClick={handleDownload}
+                    disabled={isExporting}
                   >
-                    <Download className="mr-2 h-5 w-5" />
-                    Download {outputFormat === 'epub' ? 'EPUB' : 'Reader Mode'} ({totalWords.toLocaleString()} words)
+                    {isExporting ? (
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    ) : (
+                      <Download className="mr-2 h-5 w-5" />
+                    )}
+                    {toolStatus || `Download ${outputFormat === 'epub' ? 'EPUB' : 'Reader Mode'} (${totalWords.toLocaleString()} words)`}
                   </Button>
                 </div>
               )}
@@ -739,9 +761,14 @@ export default function Home() {
               size="lg"
               className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold shadow-lg shadow-primary/20"
               onClick={handleDownload}
+              disabled={isExporting}
             >
-              <Download className="mr-2 h-5 w-5" />
-              Download {outputFormat === 'epub' ? 'EPUB' : 'Reader Mode'}
+              {isExporting ? (
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              ) : (
+                <Download className="mr-2 h-5 w-5" />
+              )}
+              {toolStatus || `Download ${outputFormat === 'epub' ? 'EPUB' : 'Reader Mode'}`}
             </Button>
           </div>
         )}
