@@ -19,14 +19,15 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Link } from "wouter";
-import { Book, Download, Trash2, Plus, Link as LinkIcon, FileText, Loader2, Image as ImageIcon, X, Settings } from "lucide-react";
+import { Download, Plus, Link as LinkIcon, FileText, Loader2, X, Settings } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useSEO } from "@/hooks/useSEO";
 import { seoRoutes } from "@/lib/seo";
+import { BinderQueue } from "@/components/home/BinderQueue";
+import { MetadataPanel } from "@/components/home/MetadataPanel";
 import { OutputControls } from "@/components/home/OutputControls";
 import { SeoArticle } from "@/components/home/SeoArticle";
 import { SiteFooter } from "@/components/home/SiteFooter";
@@ -521,149 +522,28 @@ export default function Home() {
               </CardContent>
             </Card>
 
-            <Card className="border-border shadow-lg bg-card">
-              <CardHeader>
-                <CardTitle className="font-serif text-xl">Book Metadata</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="book-title">Book Title</Label>
-                  <Input
-                    id="book-title"
-                    value={bookTitle}
-                    onChange={(e) => setBookTitle(e.target.value)}
-                    className="bg-input border-border font-serif font-bold"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="author-name">Author</Label>
-                  <Input
-                    id="author-name"
-                    value={authorName}
-                    onChange={(e) => setAuthorName(e.target.value)}
-                    className="bg-input border-border"
-                  />
-                </div>
-
-                <div className="space-y-2 pt-2">
-                  <Label>Cover Image</Label>
-                  {coverPreview ? (
-                    <div className="relative aspect-[2/3] w-32 mx-auto group rounded-lg overflow-hidden border border-border shadow-sm">
-                      <img
-                        src={coverPreview}
-                        alt="Book Cover"
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <Button
-                          variant="destructive"
-                          size="icon"
-                          onClick={handleRemoveCover}
-                          className="h-8 w-8"
-                          aria-label="Remove cover image"
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:bg-accent/5 transition-colors cursor-pointer relative">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleCoverUpload}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                      />
-                      <div className="flex flex-col items-center gap-2 text-muted-foreground pointer-events-none">
-                        <ImageIcon className="w-8 h-8 opacity-50" />
-                        <span className="text-xs">Upload Cover</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+            <MetadataPanel
+              bookTitle={bookTitle}
+              authorName={authorName}
+              coverPreview={coverPreview}
+              onBookTitleChange={setBookTitle}
+              onAuthorNameChange={setAuthorName}
+              onCoverUpload={handleCoverUpload}
+              onRemoveCover={handleRemoveCover}
+            />
           </div>
 
-          {/* Right Column: Binder Queue */}
-          <div className="lg:col-span-2 flex flex-col h-full">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-serif font-bold flex items-center gap-2">
-                Binder Queue
-                <span className="text-sm font-sans font-normal bg-secondary text-secondary-foreground px-2 py-0.5 rounded-full">
-                  {chapters.length}
-                </span>
-              </h2>
-              {chapters.length > 0 && (
-                  <Button variant="ghost" size="sm" onClick={() => setChapters([])} className="text-destructive hover:text-destructive/80">
-                  Clear All
-                </Button>
-              )}
-            </div>
-
-            <Card className="flex-1 border-border bg-card/50 backdrop-blur-sm flex flex-col min-h-[400px] mb-20 lg:mb-0">
-              <CardContent className="p-0 flex-1 flex flex-col">
-                {chapters.length === 0 ? (
-                  <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground p-8">
-                    <div className="w-16 h-16 border-2 border-dashed border-border rounded-full flex items-center justify-center mb-4">
-                      <Book className="w-8 h-8 opacity-50" />
-                    </div>
-                    <p className="text-lg font-medium">Your binder is empty</p>
-                    <p className="text-sm">Add chapters from the left to start building your ebook.</p>
-                  </div>
-                ) : (
-                  <ScrollArea className="flex-1 h-[500px]">
-                    <div className="divide-y divide-border">
-                      {chapters.map((chapter, index) => (
-                        <div key={chapter.id} className="p-4 flex items-center justify-between gap-4 group hover:bg-accent/5 transition-colors">
-                          <div className="flex items-start gap-4">
-                            <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-xs font-bold text-muted-foreground">
-                              {index + 1}
-                            </div>
-                            <div>
-                              <h3 className="font-medium font-serif text-foreground">{chapter.title}</h3>
-                              <p className="text-xs text-muted-foreground">{chapter.wordCount} words</p>
-                            </div>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleRemoveChapter(chapter.id)}
-                            className="text-muted-foreground hover:text-destructive transition-all sm:opacity-70 sm:group-hover:opacity-100"
-                            aria-label={`Remove ${chapter.title}`}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
-                )}
-              </CardContent>
-              {chapters.length > 0 && (
-                <div className="p-4 border-t border-border bg-card rounded-b-lg hidden lg:block space-y-4">
-                  <OutputControls
-                    outputFormat={outputFormat}
-                    onOutputFormatChange={setOutputFormat}
-                  />
-
-                  <Button
-                    size="lg"
-                    className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold shadow-lg shadow-primary/20"
-                    onClick={handleDownload}
-                    disabled={isExporting}
-                  >
-                    {isExporting ? (
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    ) : (
-                      <Download className="mr-2 h-5 w-5" />
-                    )}
-                    {toolStatus || `Download ${outputFormat === 'epub' ? 'EPUB' : 'Reader Mode'} (${totalWords.toLocaleString()} words)`}
-                  </Button>
-                </div>
-              )}
-            </Card>
-          </div>
+          <BinderQueue
+            chapters={chapters}
+            totalWords={totalWords}
+            outputFormat={outputFormat}
+            isExporting={isExporting}
+            toolStatus={toolStatus}
+            onClearChapters={() => setChapters([])}
+            onRemoveChapter={handleRemoveChapter}
+            onDownload={handleDownload}
+            onOutputFormatChange={setOutputFormat}
+          />
         </div>
 
         {/* Mobile Sticky Download Button */}

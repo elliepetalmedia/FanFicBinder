@@ -1,4 +1,5 @@
 import { Link } from "wouter";
+import { PublicPageShell, PublicSection } from "@/components/public/PublicPageShell";
 import { useSEO } from "@/hooks/useSEO";
 import { seoRoutes } from "@/lib/seo";
 
@@ -6,23 +7,34 @@ export default function About() {
   useSEO(seoRoutes.about);
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-8 font-sans">
-      <div className="max-w-2xl mx-auto space-y-6">
-        <Link href="/" className="text-primary hover:text-primary/80 no-underline">
-          &larr; Back to Binder
-        </Link>
+    <PublicPageShell
+      eyebrow="About"
+      title="About FanFicBinder"
+      description="FanFicBinder is a privacy-minded browser tool from Ellie Petal Media for turning long-form web reading into portable files."
+    >
+      <PublicSection title="Why this exists">
+        <p>
+          FanFicBinder was built for readers who prefer long stories on e-readers, tablets, and read-aloud tools instead of endless browser tabs. The goal is simple: collect chapters, clean up the reading format, and export a file you control.
+        </p>
+        <p>
+          The app supports readable web fiction pages, fanfiction, articles, and fully manual text entry. When a site blocks automated fetching, manual entry keeps the workflow dependable.
+        </p>
+      </PublicSection>
 
-        <h1 className="text-4xl font-bold text-primary font-serif">About FanFicBinder</h1>
+      <PublicSection title="How it handles your content">
+        <p>
+          EPUB and Reader Mode HTML generation happen in your browser. The first-party proxy is used only when you ask FanFicBinder to fetch a URL, and the binder content is not stored as an account, library, or database record.
+        </p>
+        <p>
+          For details about analytics, ads, URL fetching, and cookies, read the <Link href="/privacy" className="text-primary hover:text-primary/80">Privacy Policy</Link>.
+        </p>
+      </PublicSection>
 
-        <div className="space-y-4 text-lg leading-relaxed">
-          <p>
-            FanFicBinder.com is a digital utility project published by <strong>Ellie Petal Media</strong>.
-          </p>
-          <p>
-            We are readers and writers who love long-form web fiction. We built this tool because we wanted a reliable, privacy-minded way to move stories from the web to e-readers without installing sketchy software. FanFicBinder runs primarily in your browser, using a lightweight serverless function only to fetch the pages you request.
-          </p>
-        </div>
-      </div>
-    </div>
+      <PublicSection title="Where to start">
+        <p>
+          Open the <Link href="/" className="text-primary hover:text-primary/80">binder tool</Link> to add chapters, or read the <Link href="/guides/web-fiction-to-epub" className="text-primary hover:text-primary/80">web fiction to EPUB guide</Link> for a step-by-step workflow.
+        </p>
+      </PublicSection>
+    </PublicPageShell>
   );
 }

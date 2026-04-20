@@ -8,6 +8,9 @@ const About = lazy(() => import("@/pages/about"));
 const Contact = lazy(() => import("@/pages/contact"));
 const Privacy = lazy(() => import("@/pages/privacy"));
 const FAQ = lazy(() => import("@/pages/faq"));
+const WebFictionToEpubGuide = lazy(() => import("@/pages/guides/web-fiction-to-epub"));
+const ReaderModeHtmlGuide = lazy(() => import("@/pages/guides/reader-mode-html"));
+const EpubToEreaderGuide = lazy(() => import("@/pages/guides/epub-to-ereader"));
 
 function RouteFallback() {
   return (
@@ -25,6 +28,9 @@ function Router() {
       <Route path="/contact" component={Contact} />
       <Route path="/privacy" component={Privacy} />
       <Route path="/faq" component={FAQ} />
+      <Route path="/guides/web-fiction-to-epub" component={WebFictionToEpubGuide} />
+      <Route path="/guides/reader-mode-html" component={ReaderModeHtmlGuide} />
+      <Route path="/guides/epub-to-ereader" component={EpubToEreaderGuide} />
       <Route component={NotFound} />
     </Switch>
   );

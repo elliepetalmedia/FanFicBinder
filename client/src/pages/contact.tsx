@@ -1,4 +1,5 @@
 import { Link } from "wouter";
+import { PublicPageShell, PublicSection } from "@/components/public/PublicPageShell";
 import { useSEO } from "@/hooks/useSEO";
 import { seoRoutes } from "@/lib/seo";
 
@@ -6,31 +7,31 @@ export default function Contact() {
   useSEO(seoRoutes.contact);
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-8 font-sans">
-      <div className="max-w-2xl mx-auto space-y-6">
-        <Link href="/" className="text-primary hover:text-primary/80 no-underline">
-          &larr; Back to Binder
-        </Link>
+    <PublicPageShell
+      eyebrow="Contact"
+      title="Contact FanFicBinder"
+      description="Contact Ellie Petal Media about FanFicBinder, legal matters, advertising, or site feedback."
+    >
+      <PublicSection title="Publisher">
+        <p>
+          FanFicBinder is published by <strong>Ellie Petal Media</strong>.
+        </p>
+      </PublicSection>
 
-        <h1 className="text-4xl font-bold text-primary font-serif">Contact Us</h1>
+      <PublicSection title="Business and legal inquiries">
+        <p>
+          For advertising, business, or legal matters, contact <strong>legal@fanficbinder.com</strong>.
+        </p>
+        <p>
+          Please include the page URL, the issue you are reporting, and any relevant context.
+        </p>
+      </PublicSection>
 
-        <div className="space-y-6 text-lg leading-relaxed">
-          <div>
-            <p className="font-bold">Publisher:</p>
-            <p>Ellie Petal Media</p>
-          </div>
-
-          <div>
-            <h3 className="text-2xl font-bold mb-2 text-foreground">Support Policy</h3>
-            <p>This tool is provided as-is. We cannot provide technical support for specific e-reader compatibility issues.</p>
-          </div>
-
-          <div>
-            <h3 className="text-2xl font-bold mb-2 text-foreground">Business Inquiries</h3>
-            <p>For advertising and legal matters, please contact: <strong>legal@fanficbinder.com</strong></p>
-          </div>
-        </div>
-      </div>
-    </div>
+      <PublicSection title="Support policy">
+        <p>
+          FanFicBinder is provided as a free utility. We cannot provide individual troubleshooting for every e-reader, source website, or speech app, but the <Link href="/faq" className="text-primary hover:text-primary/80">FAQ</Link> and guides cover the common workflows.
+        </p>
+      </PublicSection>
+    </PublicPageShell>
   );
 }

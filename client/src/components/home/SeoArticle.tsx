@@ -31,10 +31,13 @@ export function SeoArticle() {
         <p className="leading-relaxed">
           Offline reading makes long stories easier to finish and keeps your favorite works available when you are away from a connection. EPUB export also gives you better typography, battery life, and organization than endless phone scrolling.
         </p>
-        <p className="leading-relaxed mt-4">
-          Need help? Read the <Link href="/faq" className="text-primary hover:text-primary/80">FanFicBinder FAQ</Link> for URL fetching, manual entry, reader mode HTML, privacy, and e-reader transfer tips.
-        </p>
-      </div>
+            <p className="leading-relaxed mt-4">
+              Need help? Read the <Link href="/faq" className="text-primary hover:text-primary/80">FanFicBinder FAQ</Link> for URL fetching, manual entry, reader mode HTML, privacy, and e-reader transfer tips.
+            </p>
+            <p className="leading-relaxed mt-4">
+              For step-by-step help, start with the <Link href="/guides/web-fiction-to-epub" className="text-primary hover:text-primary/80">web fiction to EPUB guide</Link>, the <Link href="/guides/reader-mode-html" className="text-primary hover:text-primary/80">Reader Mode HTML guide</Link>, or the <Link href="/guides/epub-to-ereader" className="text-primary hover:text-primary/80">EPUB to e-reader guide</Link>.
+            </p>
+          </div>
     </article>
   );
 }

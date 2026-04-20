@@ -4,7 +4,15 @@ export const DEFAULT_OG_IMAGE = `${SITE_URL}/opengraph.jpg`;
 type JsonLd = Record<string, unknown>;
 
 export interface SeoRoute {
-  id: "home" | "about" | "faq" | "contact" | "privacy";
+  id:
+    | "home"
+    | "about"
+    | "faq"
+    | "contact"
+    | "privacy"
+    | "webFictionToEpub"
+    | "readerModeHtml"
+    | "epubToEreader";
   path: string;
   title: string;
   description: string;
@@ -29,22 +37,65 @@ const websiteJsonLd = {
   url: SITE_URL,
 };
 
+function articleJsonLd(path: string, headline: string, description: string): JsonLd {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline,
+    description,
+    mainEntityOfPage: `${SITE_URL}${path}`,
+    publisher: organizationJsonLd,
+  };
+}
+
+function howToJsonLd(
+  path: string,
+  name: string,
+  description: string,
+  steps: string[],
+): JsonLd {
+  return {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    name,
+    description,
+    mainEntityOfPage: `${SITE_URL}${path}`,
+    step: steps.map((text, index) => ({
+      "@type": "HowToStep",
+      position: index + 1,
+      text,
+    })),
+  };
+}
+
 const faqItems = [
   {
     question: "How does FanFicBinder work?",
-    answer: "FanFicBinder creates EPUB files and reader mode HTML from web fiction, fanfiction, and articles. You can fetch readable pages or paste chapters manually, then export an offline file for an e-reader or text-to-speech app.",
+    answer: "FanFicBinder creates EPUB files and Reader Mode HTML from web fiction, fanfiction, and articles. You can fetch readable pages or paste chapters manually, then export an offline file for an e-reader or text-to-speech app.",
+  },
+  {
+    question: "How do I fetch chapters?",
+    answer: "Paste a full HTTP or HTTPS URL into the URL Fetcher, choose single chapter or sequence fetching, and review the binder queue as chapters are added.",
   },
   {
     question: "What is Reader Mode?",
-    answer: "Reader Mode generates a clean single-file HTML version of your binder for text-to-speech tools such as browser read-aloud features and speech apps.",
+    answer: "Reader Mode generates a clean single-file HTML version of your binder for text-to-speech tools such as Edge Read Aloud, Safari Listen to Page, Speechify, and Voice Dream Reader.",
   },
   {
     question: "What if URL fetching fails?",
     answer: "Some sites block automated fetching. If a URL cannot be read, copy the chapter text from your browser and add it with Manual Entry.",
   },
   {
+    question: "Can I change the font or layout?",
+    answer: "Yes. Formatting options let you choose a font style, line spacing, and optional drop caps for the EPUB export.",
+  },
+  {
+    question: "How do I move the EPUB to an e-reader?",
+    answer: "Download the EPUB, then transfer it through the method your device supports, such as Send to Kindle, USB transfer, Apple Books, Files, AirDrop, or a reading app import flow.",
+  },
+  {
     question: "Is my content private and secure?",
-    answer: "EPUB and reader mode generation happens on your device. The proxy is used only to fetch URLs you request and the app does not store your binder content.",
+    answer: "EPUB and Reader Mode HTML generation happens on your device. The proxy is used only to fetch URLs you request and the app does not store your binder content.",
   },
 ];
 
@@ -144,6 +195,90 @@ export const seoRoutes = {
     ogType: "article",
     twitterCard: "summary_large_image",
     jsonLd: organizationJsonLd,
+  },
+  webFictionToEpub: {
+    id: "webFictionToEpub",
+    path: "/guides/web-fiction-to-epub",
+    title: "How to Turn Web Fiction into EPUB Files - FanFicBinder",
+    description: "Learn how to convert web fiction, fanfiction, and readable articles into EPUB files for offline reading and e-readers.",
+    changefreq: "monthly",
+    priority: "0.7",
+    ogType: "article",
+    twitterCard: "summary_large_image",
+    jsonLd: [
+      articleJsonLd(
+        "/guides/web-fiction-to-epub",
+        "How to Turn Web Fiction into EPUB Files",
+        "A practical workflow for saving long stories, fanfiction, and readable articles as clean EPUB files.",
+      ),
+      howToJsonLd(
+        "/guides/web-fiction-to-epub",
+        "Turn web fiction into an EPUB",
+        "Build a clean EPUB from readable web fiction or manually pasted chapters.",
+        [
+          "Open the chapter or article in your browser and confirm the text is readable.",
+          "Fetch the URL in FanFicBinder or paste the text with Manual Entry.",
+          "Add chapters in reading order and set book metadata.",
+          "Choose EPUB and download the finished file.",
+        ],
+      ),
+    ],
+  },
+  readerModeHtml: {
+    id: "readerModeHtml",
+    path: "/guides/reader-mode-html",
+    title: "Reader Mode HTML for Text-to-Speech - FanFicBinder",
+    description: "Use Reader Mode HTML for browser read-aloud tools, screen readers, speech apps, and offline listening workflows.",
+    changefreq: "monthly",
+    priority: "0.7",
+    ogType: "article",
+    twitterCard: "summary_large_image",
+    jsonLd: [
+      articleJsonLd(
+        "/guides/reader-mode-html",
+        "Reader Mode HTML for Text-to-Speech",
+        "A guide to exporting clean HTML for read-aloud tools, speech apps, and offline listening.",
+      ),
+      howToJsonLd(
+        "/guides/reader-mode-html",
+        "Create Reader Mode HTML for text-to-speech",
+        "Export a clean HTML file from your binder for browser read-aloud tools and speech apps.",
+        [
+          "Add chapters with URL Fetcher or Manual Entry.",
+          "Choose Reader Mode as the output format.",
+          "Download the HTML file.",
+          "Open the file in a browser or import it into a speech app.",
+        ],
+      ),
+    ],
+  },
+  epubToEreader: {
+    id: "epubToEreader",
+    path: "/guides/epub-to-ereader",
+    title: "How to Move an EPUB to an E-reader - FanFicBinder",
+    description: "Move exported EPUB files to Kindle, Kobo, Apple Books, Nook, and other e-reader apps or devices.",
+    changefreq: "monthly",
+    priority: "0.7",
+    ogType: "article",
+    twitterCard: "summary_large_image",
+    jsonLd: [
+      articleJsonLd(
+        "/guides/epub-to-ereader",
+        "How to Move an EPUB to an E-reader",
+        "Transfer exported EPUB files to Kindle, Kobo, Apple Books, Nook, and other reading apps.",
+      ),
+      howToJsonLd(
+        "/guides/epub-to-ereader",
+        "Move an EPUB to an e-reader",
+        "Transfer a downloaded EPUB file to the reading device or app you use.",
+        [
+          "Download the EPUB from FanFicBinder.",
+          "Choose the transfer method for your device, such as Send to Kindle, USB, Files, or AirDrop.",
+          "Open the file in your e-reader library or reading app.",
+          "Regenerate with simpler formatting if your reader has display issues.",
+        ],
+      ),
+    ],
   },
 } satisfies Record<string, SeoRoute>;
 

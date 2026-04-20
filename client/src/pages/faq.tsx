@@ -1,6 +1,5 @@
 import { Link } from "wouter";
-import { CardHeader, CardTitle } from "@/components/ui/card";
-import { ChevronLeft } from "lucide-react";
+import { PublicPageShell, PublicSection } from "@/components/public/PublicPageShell";
 import { useSEO } from "@/hooks/useSEO";
 import { seoRoutes } from "@/lib/seo";
 
@@ -8,199 +7,69 @@ export default function FAQ() {
   useSEO(seoRoutes.faq);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background text-foreground font-sans">
-      {/* Header */}
-      <header className="border-b border-border bg-card py-4 sticky top-0 z-10">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center gap-3 mb-2">
-            <Link href="/" className="flex items-center gap-1 text-primary hover:text-primary/80 transition-colors">
-              <ChevronLeft className="w-5 h-5" />
-              Back
-            </Link>
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight font-serif text-foreground">
-            Frequently Asked Questions
-          </h1>
-        </div>
-      </header>
+    <PublicPageShell
+      eyebrow="FAQ"
+      title="Frequently Asked Questions"
+      description="Answers about EPUB export, Reader Mode HTML, URL fetching, manual entry, privacy, and e-reader workflows."
+    >
+      <PublicSection title="How does FanFicBinder work?">
+        <p>
+          FanFicBinder creates EPUB files and Reader Mode HTML from web fiction, fanfiction, and articles. You can fetch readable pages or paste chapters manually, then export an offline file for an e-reader or text-to-speech app.
+        </p>
+        <p>
+          Manual text, metadata, cover images, and export generation happen in your browser. URL fetching uses the first-party proxy only for pages you request.
+        </p>
+      </PublicSection>
 
-      {/* Main Content */}
-      <main className="flex-1 container mx-auto px-4 py-8 max-w-3xl">
-        <div className="space-y-8">
-          {/* How It Works */}
-          <section className="space-y-3">
-            <h2 className="text-2xl font-bold font-serif text-foreground">How does FanFicBinder work?</h2>
-            <p className="text-foreground/90 leading-relaxed">
-              FanFicBinder lets you create EPUB files (e-book format) from web content. Everything happens locally in your browser—your content never gets uploaded anywhere. You can add chapters by fetching from URLs or manually pasting text, customize your book with a title, author, and cover image, then download the finished EPUB to read on any e-reader.
-            </p>
-          </section>
+      <PublicSection title="How do I fetch chapters?">
+        <ol className="list-decimal pl-6 space-y-2">
+          <li>Paste a full URL that starts with http:// or https://.</li>
+          <li>Choose whether to fetch a single chapter or try sequence fetching.</li>
+          <li>Review the binder queue as chapters are added.</li>
+        </ol>
+        <p className="text-sm text-muted-foreground">
+          Sequence fetching works best when a page exposes a clear next-chapter link. AO3 and RoyalRoad are the first-pass optimized paths.
+        </p>
+      </PublicSection>
 
-          {/* Fetching URLs */}
-          <section className="space-y-3">
-            <h3 className="text-xl font-bold font-serif text-foreground">How do I fetch chapters?</h3>
-            <div className="space-y-2 text-foreground/90">
-              <p>
-                1. <strong>Single Chapter:</strong> Paste the URL and click "Fetch Chapter".
-              </p>
-              <p>
-                2. <strong>Multiple Chapters (Sequence):</strong> Check the "Try to fetch following chapters automatically" box. We'll grab the first chapter, look for a "Next" link, and keep going until we hit a limit or the end.
-              </p>
-              <p className="text-sm text-muted-foreground italic">
-                Note: Sequence fetching adds a polite 1.5-second delay between requests to respect the source site's servers. It works best on AO3 and RoyalRoad.
-              </p>
-            </div>
-          </section>
+      <PublicSection title="What if URL fetching fails?">
+        <p>
+          Some sites block automated fetching or return pages that are not readable through a proxy. Wattpad commonly blocks this kind of tool. If a fetch fails, open the chapter in your browser, copy the story text, and use Manual Entry.
+        </p>
+        <p>
+          FanFicBinder rejects private/internal URLs, unsupported protocols, non-HTML responses, and oversized responses for safety and predictability.
+        </p>
+      </PublicSection>
 
-          {/* Formatting */}
-          <section className="space-y-3">
-            <h3 className="text-xl font-bold font-serif text-foreground">Can I change the font or layout?</h3>
-            <div className="space-y-2 text-foreground/90">
-              <p>
-                Yes! Click the "Formatting Options" accordion to reveal settings for:
-              </p>
-              <ul className="list-disc pl-6 space-y-1">
-                <li><strong>Font:</strong> Choose Serif (Merriweather), Sans-Serif, or Dyslexic-Friendly.</li>
-                <li><strong>Spacing:</strong> Adjust line height for comfortable reading.</li>
-                <li><strong>Drop Caps:</strong> Add a stylish large letter to the start of each chapter.</li>
-              </ul>
-              <p>
-                These settings are baked into the EPUB css, so they should work on most e-readers.
-              </p>
-            </div>
-          </section>
+      <PublicSection title="What is Reader Mode?">
+        <p>
+          Reader Mode generates a clean single-file HTML version of your binder for text-to-speech tools such as Edge Read Aloud, Safari Listen to Page, Speechify, and Voice Dream Reader.
+        </p>
+        <p>
+          For more detail, read the <Link href="/guides/reader-mode-html" className="text-primary hover:text-primary/80">Reader Mode HTML guide</Link>.
+        </p>
+      </PublicSection>
 
-          {/* Reader Mode */}
-          <section className="space-y-3">
-            <h3 className="text-xl font-bold font-serif text-foreground">What is Reader Mode?</h3>
-            <div className="space-y-2 text-foreground/90">
-              <p>
-                Reader Mode generates a clean, single-file HTML version of your book optimized for accessibility tools.
-              </p>
-              <p>
-                <strong>How to use it:</strong>
-              </p>
-              <ul className="list-disc pl-6 space-y-1">
-                <li><strong>Mobile:</strong> Open the file in Safari (iOS) or Edge (Android) and use the "Listen to Page" or "Read Aloud" feature.</li>
-                <li><strong>Desktop:</strong> Open in Edge and click the "Read Aloud" (A) icon in the address bar.</li>
-                <li><strong>Speech Apps:</strong> Import the file directly into Speechify or Voice Dream Reader.</li>
-              </ul>
-              <p className="text-sm text-muted-foreground italic">
-                The file includes special "aria-labels" and semantic structure so screen readers know exactly where chapters begin and end.
-              </p>
-            </div>
-          </section>
+      <PublicSection title="Can I change the font or layout?">
+        <p>
+          Yes. Formatting options let you choose a font style, line spacing, and optional drop caps. These settings are baked into the EPUB so most e-readers can use them.
+        </p>
+      </PublicSection>
 
-          {/* Manual Entry */}
-          <section className="space-y-3">
-            <h3 className="text-xl font-bold font-serif text-foreground">How do I add a chapter manually?</h3>
-            <div className="space-y-2 text-foreground/90">
-              <p>
-                1. Click the "Manual" tab in the "Add Content" section.
-              </p>
-              <p>
-                2. Click "Add Custom Chapter".
-              </p>
-              <p>
-                3. Enter a chapter title (e.g., "Chapter 1: The Beginning").
-              </p>
-              <p>
-                4. Paste or type the chapter content in the text area.
-              </p>
-              <p>
-                5. Click "Save Chapter" to add it to your binder.
-              </p>
-              <p className="text-sm text-muted-foreground italic">
-                Manual Entry is perfect for sites that block fetching or when you want to paste content from anywhere.
-              </p>
-            </div>
-          </section>
+      <PublicSection title="How do I move the EPUB to an e-reader?">
+        <p>
+          Download the EPUB, then transfer it through the method your device supports: Send to Kindle, USB transfer, Apple Books, Files, AirDrop, or a reading app import flow.
+        </p>
+        <p>
+          See the <Link href="/guides/epub-to-ereader" className="text-primary hover:text-primary/80">EPUB to e-reader guide</Link> for device-specific direction.
+        </p>
+      </PublicSection>
 
-          {/* Adding Metadata */}
-          <section className="space-y-3">
-            <h3 className="text-xl font-bold font-serif text-foreground">How do I customize my book?</h3>
-            <div className="space-y-2 text-foreground/90">
-              <p>
-                <strong>Book Title:</strong> Enter your book's title (e.g., "My Favorite Fanfic"). This appears on the cover and in e-reader info.
-              </p>
-              <p>
-                <strong>Author:</strong> Enter the author name (e.g., "Jane Doe" or "Various Authors" for compilations).
-              </p>
-              <p>
-                <strong>Cover Image:</strong> Upload a cover image by clicking the "Upload Cover" area. It will display on your e-reader. Supported formats: JPG, PNG, etc.
-              </p>
-              <p className="text-sm text-muted-foreground italic">
-                All customization is optional. If you don't set these, defaults will be used.
-              </p>
-            </div>
-          </section>
-
-          {/* Publishing */}
-          <section className="space-y-3">
-            <h3 className="text-xl font-bold font-serif text-foreground">How do I download and publish my EPUB?</h3>
-            <div className="space-y-2 text-foreground/90">
-              <p>
-                1. Add all your chapters using either the URL Fetcher or Manual Entry.
-              </p>
-              <p>
-                2. Customize the book metadata (title, author, cover) if desired.
-              </p>
-              <p>
-                3. Click the "Download EPUB" button at the bottom right of the Binder Queue (or the sticky button on mobile).
-              </p>
-              <p>
-                4. Your EPUB file will download to your device.
-              </p>
-              <p>
-                5. Transfer the file to your e-reader via USB, email, or your e-reader's companion app (Kindle, Apple Books, Kobo, etc.).
-              </p>
-              <p className="text-sm text-muted-foreground italic">
-                The entire process is client-side, so your EPUB is created directly on your device—no upload required.
-              </p>
-            </div>
-          </section>
-
-          {/* Troubleshooting */}
-          <section className="space-y-3">
-            <h3 className="text-xl font-bold font-serif text-foreground">What if URL fetching fails?</h3>
-            <div className="space-y-2 text-foreground/90">
-              <p>
-                <strong>First, try again:</strong> Network hiccups happen. Retry the fetch—it often works on the second or third attempt.
-              </p>
-              <p>
-                <strong>Some sites block fetching:</strong> Sites like Wattpad actively block automated tools. For these, manually copy the text and use the Manual Entry method.
-              </p>
-              <p>
-                <strong>Use Manual Entry as a fallback:</strong> If fetching doesn't work after a few tries, open the page in your browser, select and copy the text, then paste it using Manual Entry.
-              </p>
-              <p className="text-sm text-muted-foreground italic">
-                Manual Entry always works since you're providing the content directly.
-              </p>
-            </div>
-          </section>
-
-          {/* Privacy */}
-          <section className="space-y-3">
-            <h3 className="text-xl font-bold font-serif text-foreground">Is my content private and secure?</h3>
-            <div className="space-y-2 text-foreground/90">
-              <p>
-                EPUB and reader mode generation happen on your device. The proxy is used only to fetch URLs you request, and FanFicBinder does not store your binder content. For more details, see our <Link href="/privacy" className="text-primary hover:text-primary/80">Privacy Policy</Link>.
-              </p>
-            </div>
-          </section>
-        </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t border-border bg-card py-8 mt-12">
-        <div className="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
-          <p>&copy; 2025 Ellie Petal Media. All rights reserved.</p>
-          <nav className="flex gap-6">
-            <Link href="/about" className="hover:text-primary transition-colors">About</Link>
-            <Link href="/contact" className="hover:text-primary transition-colors">Contact</Link>
-            <Link href="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link>
-          </nav>
-        </div>
-      </footer>
-    </div>
+      <PublicSection title="Is my content private?">
+        <p>
+          EPUB and Reader Mode HTML generation happen on your device. The proxy is used only to fetch URLs you request, and FanFicBinder does not store your binder content. Read the <Link href="/privacy" className="text-primary hover:text-primary/80">Privacy Policy</Link> for more detail.
+        </p>
+      </PublicSection>
+    </PublicPageShell>
   );
 }

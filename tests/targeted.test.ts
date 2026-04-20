@@ -43,21 +43,41 @@ function countMatches(value: string, pattern: RegExp): number {
   return value.match(pattern)?.length ?? 0;
 }
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function testPrerenderOutput() {
   for (const route of Object.values(seoRoutes)) {
     const html = readRouteHtml(route.path);
     const canonicalUrl = getCanonicalUrl(route);
+    const jsonLdCount = countMatches(html, /data-route-json-ld="true"/g);
 
-    assert.match(html, new RegExp(`<title>${route.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}</title>`));
+    assert.match(html, new RegExp(`<title>${escapeRegExp(route.title)}</title>`));
     assert.equal(countMatches(html, /rel="canonical"/g), 1);
-    assert.match(html, new RegExp(`property="og:url" content="${canonicalUrl.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"`));
-    assert.match(html, /<div id="root">[\s\S]+<\/div>/);
+    assert.match(html, new RegExp(`property="og:url" content="${escapeRegExp(canonicalUrl)}"`));
+    assert.equal(jsonLdCount, route.jsonLd ? 1 : 0);
+    assert.match(html, /<div id="root">[\s\S]*[A-Za-z][\s\S]*<\/div>/);
+
+    if (route.path.startsWith("/guides/")) {
+      assert.match(html, /Guide/);
+      assert.match(html, /Related guides/);
+    }
   }
+}
+
+function testSitemapMatchesSeoRegistry() {
+  const sitemap = fs.readFileSync(path.join(repoRoot, "dist/public/sitemap.xml"), "utf8");
+  const urls = Array.from(sitemap.matchAll(/<loc>(.*?)<\/loc>/g)).map((match) => match[1]);
+  const routeUrls = Object.values(seoRoutes).map(getCanonicalUrl);
+
+  assert.deepEqual(urls.sort(), routeUrls.sort());
 }
 
 testChapterHelpers();
 testSanitizerFallback();
 testFetchUrlValidation();
 testPrerenderOutput();
+testSitemapMatchesSeoRegistry();
 
 console.log("Targeted tests passed.");

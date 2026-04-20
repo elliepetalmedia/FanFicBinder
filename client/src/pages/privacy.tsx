@@ -1,4 +1,5 @@
 import { Link } from "wouter";
+import { PublicPageShell, PublicSection } from "@/components/public/PublicPageShell";
 import { useSEO } from "@/hooks/useSEO";
 import { seoRoutes } from "@/lib/seo";
 
@@ -6,34 +7,42 @@ export default function Privacy() {
   useSEO(seoRoutes.privacy);
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-8 font-sans">
-      <div className="max-w-2xl mx-auto space-y-6">
-        <Link href="/" className="text-primary hover:text-primary/80 no-underline">
-          &larr; Back to Binder
-        </Link>
+    <PublicPageShell
+      eyebrow="Privacy"
+      title="Privacy Policy"
+      description="How FanFicBinder handles URL fetching, local file generation, analytics, ads, cookies, and user-provided content."
+    >
+      <p className="text-sm text-muted-foreground"><strong>Last updated:</strong> April 20, 2026</p>
 
-        <h1 className="text-4xl font-bold text-primary font-serif">Privacy Policy</h1>
+      <PublicSection title="Local file generation">
+        <p>
+          FanFicBinder creates EPUB and Reader Mode HTML files in your browser. Manual chapter text, book metadata, and cover images are used to generate your download and are not stored in a FanFicBinder account or content database.
+        </p>
+      </PublicSection>
 
-        <div className="space-y-6 text-lg leading-relaxed">
-          <p><strong>Last Updated:</strong> 2025</p>
-          <p>This Privacy Policy applies to FanFicBinder.com, published by Ellie Petal Media.</p>
+      <PublicSection title="URL fetching">
+        <p>
+          When you use URL Fetcher, the URL you enter is sent to a first-party proxy so the page can be retrieved and returned to your browser. The proxy is intended only to fetch pages you request and rejects private, internal, malformed, oversized, and non-HTML responses.
+        </p>
+        <p>
+          Some sites block automated fetching. When that happens, use Manual Entry instead of trying to bypass a source site's restrictions.
+        </p>
+      </PublicSection>
 
-          <div>
-            <h3 className="text-2xl font-bold mb-2 text-foreground">1. Data Processing</h3>
-            <p>When you use the "Fetch from URL" feature, the URL is sent to our serverless function solely to retrieve the text. We do not store, log, or retain the content of the stories you download. The EPUB file generation happens locally on your device.</p>
-          </div>
+      <PublicSection title="Analytics, ads, and cookies">
+        <p>
+          FanFicBinder uses Google Analytics to understand aggregate site traffic and Google AdSense to show ads. These third-party services may use cookies or similar technologies according to their own policies.
+        </p>
+        <p>
+          The disclosure notice can be dismissed in your browser. Dismissing it stores only a local preference on your device.
+        </p>
+      </PublicSection>
 
-          <div>
-            <h3 className="text-2xl font-bold mb-2 text-foreground">2. Cookies</h3>
-            <p>We use third-party services (Google Analytics, Google AdSense) that use cookies to analyze traffic and serve personalized ads. By using this site, you consent to the use of cookies.</p>
-          </div>
-
-          <div>
-            <h3 className="text-2xl font-bold mb-2 text-foreground">3. Contact</h3>
-            <p>legal@fanficbinder.com</p>
-          </div>
-        </div>
-      </div>
-    </div>
+      <PublicSection title="Contact">
+        <p>
+          For privacy, legal, or business inquiries, contact <strong>legal@fanficbinder.com</strong>. You can also visit the <Link href="/contact" className="text-primary hover:text-primary/80">Contact page</Link>.
+        </p>
+      </PublicSection>
+    </PublicPageShell>
   );
 }
