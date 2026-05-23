@@ -9,6 +9,7 @@ export default function WebFictionToEpubGuide() {
 
   return (
     <PublicPageShell
+      route={seoRoutes.webFictionToEpub}
       eyebrow="Guide"
       title="How to Turn Web Fiction into an EPUB"
       description="A practical workflow for saving long stories, fanfiction, and readable articles as clean EPUB files for offline reading."
@@ -19,6 +20,9 @@ export default function WebFictionToEpubGuide() {
         </p>
         <p>
           For sites that block automated fetching, use <Link href="/" className="text-primary hover:text-primary/80">Manual Entry</Link>. Copy the chapter text, paste it into a custom chapter, and FanFicBinder will still package it into the same binder.
+        </p>
+        <p>
+          If you are specifically working with fanfiction, AO3, or Royal Road, the <Link href="/guides" className="text-primary hover:text-primary/80">guides hub</Link> links to narrower workflows for those cases.
         </p>
       </PublicSection>
 

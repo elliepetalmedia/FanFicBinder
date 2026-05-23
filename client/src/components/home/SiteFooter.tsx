@@ -7,7 +7,8 @@ export function SiteFooter() {
         <p>&copy; 2025 Ellie Petal Media. All rights reserved.</p>
           <nav className="flex gap-6">
             <Link href="/about" className="hover:text-primary transition-colors">About</Link>
-            <Link href="/guides/web-fiction-to-epub" className="hover:text-primary transition-colors">Guides</Link>
+            <Link href="/guides" className="hover:text-primary transition-colors">Guides</Link>
+            <Link href="/faq" className="hover:text-primary transition-colors">FAQ</Link>
             <Link href="/contact" className="hover:text-primary transition-colors">Contact</Link>
             <Link href="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link>
           </nav>

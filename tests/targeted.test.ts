@@ -6,7 +6,13 @@ import { fileURLToPath } from "node:url";
 import { countWords, escapeXml, plainTextToChapterContent } from "../client/src/lib/chapter";
 import { sanitizeContent } from "../client/src/lib/content/sanitize";
 import { validateFetchUrl } from "../client/src/lib/fetch/chapterFetch";
-import { getCanonicalUrl, seoRoutes } from "../client/src/lib/seo";
+import {
+  buildLlmsFullTxt,
+  buildLlmsTxt,
+  buildRobotsTxt,
+  getCanonicalUrl,
+  seoRoutes,
+} from "../client/src/lib/seo";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -56,11 +62,15 @@ function testPrerenderOutput() {
     assert.match(html, new RegExp(`<title>${escapeRegExp(route.title)}</title>`));
     assert.equal(countMatches(html, /rel="canonical"/g), 1);
     assert.match(html, new RegExp(`property="og:url" content="${escapeRegExp(canonicalUrl)}"`));
-    assert.equal(jsonLdCount, route.jsonLd ? 1 : 0);
+    assert.equal(jsonLdCount, 1);
     assert.match(html, /<div id="root">[\s\S]*[A-Za-z][\s\S]*<\/div>/);
 
-    if (route.path.startsWith("/guides/")) {
-      assert.match(html, /Guide/);
+    if (route.path !== "/") {
+      assert.match(html, /Last updated/);
+    }
+
+    if (route.path.startsWith("/guides")) {
+      assert.match(html, /Breadcrumb/);
       assert.match(html, /Related guides/);
     }
   }
@@ -69,9 +79,24 @@ function testPrerenderOutput() {
 function testSitemapMatchesSeoRegistry() {
   const sitemap = fs.readFileSync(path.join(repoRoot, "dist/public/sitemap.xml"), "utf8");
   const urls = Array.from(sitemap.matchAll(/<loc>(.*?)<\/loc>/g)).map((match) => match[1]);
+  const lastmods = Array.from(sitemap.matchAll(/<lastmod>(.*?)<\/lastmod>/g)).map((match) => match[1]);
   const routeUrls = Object.values(seoRoutes).map(getCanonicalUrl);
 
   assert.deepEqual(urls.sort(), routeUrls.sort());
+  assert.equal(lastmods.length, routeUrls.length);
+}
+
+function testCrawlerArtifacts() {
+  const robots = fs.readFileSync(path.join(repoRoot, "dist/public/robots.txt"), "utf8");
+  const llms = fs.readFileSync(path.join(repoRoot, "dist/public/llms.txt"), "utf8");
+  const llmsFull = fs.readFileSync(path.join(repoRoot, "dist/public/llms-full.txt"), "utf8");
+
+  assert.equal(robots, buildRobotsTxt());
+  assert.equal(llms, buildLlmsTxt());
+  assert.equal(llmsFull, buildLlmsFullTxt());
+  assert.match(robots, /LLM-Guide/);
+  assert.match(llms, /Preferred citation pages/);
+  assert.match(llmsFull, /Indexable routes/);
 }
 
 testChapterHelpers();
@@ -79,5 +104,6 @@ testSanitizerFallback();
 testFetchUrlValidation();
 testPrerenderOutput();
 testSitemapMatchesSeoRegistry();
+testCrawlerArtifacts();
 
 console.log("Targeted tests passed.");

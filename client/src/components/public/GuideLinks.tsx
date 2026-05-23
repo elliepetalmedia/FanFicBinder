@@ -1,27 +1,39 @@
 import { Link } from "wouter";
+import { publicGuideRouteList, seoRoutes } from "@/lib/seo";
 
-const guideLinks = [
-  { href: "/guides/web-fiction-to-epub", label: "Web fiction to EPUB" },
-  { href: "/guides/reader-mode-html", label: "Reader Mode HTML" },
-  { href: "/guides/epub-to-ereader", label: "EPUB to e-reader" },
+const featuredGuideLinks = [
+  seoRoutes.webFictionToEpub,
+  seoRoutes.fanfictionToEpub,
+  seoRoutes.readerModeHtml,
+  seoRoutes.sendEpubToKindle,
+  seoRoutes.fetchBlocked,
 ];
 
 export function GuideLinks({ currentPath }: { currentPath?: string }) {
+  const guideLinks = currentPath
+    ? featuredGuideLinks
+    : publicGuideRouteList;
+
   return (
     <nav aria-label="Related guides" className="border border-border rounded-lg p-4 bg-card/50">
-      <p className="text-sm font-bold text-foreground mb-3">Related guides</p>
-      <div className="flex flex-col sm:flex-row gap-2">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm font-bold text-foreground">Related guides</p>
+        <Link href="/guides" className="text-sm text-primary hover:text-primary/80">
+          Browse all guides
+        </Link>
+      </div>
+      <div className="flex flex-col gap-2">
         {guideLinks.map((guide) => (
           <Link
-            key={guide.href}
-            href={guide.href}
+            key={guide.path}
+            href={guide.path}
             className={`text-sm rounded-md border px-3 py-2 transition-colors ${
-              guide.href === currentPath
+              guide.path === currentPath
                 ? "border-primary text-primary bg-primary/10"
                 : "border-border text-muted-foreground hover:text-primary hover:border-primary/60"
             }`}
           >
-            {guide.label}
+            {guide.navLabel}
           </Link>
         ))}
       </div>

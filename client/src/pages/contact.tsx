@@ -8,6 +8,7 @@ export default function Contact() {
 
   return (
     <PublicPageShell
+      route={seoRoutes.contact}
       eyebrow="Contact"
       title="Contact FanFicBinder"
       description="Contact Ellie Petal Media about FanFicBinder, legal matters, advertising, or site feedback."

@@ -8,7 +8,7 @@ export function SeoArticle() {
       <div>
         <h2 className="text-2xl font-bold text-foreground mb-4">Read Web Fiction Offline on E-readers</h2>
         <p className="leading-relaxed mb-6">
-          FanFicBinder is a fanfiction downloader and web fiction to EPUB tool for readers who want long-form stories on Kindle, Kobo, Apple Books, or another e-reader. Add chapters from readable web pages or paste text manually, then export a clean offline file.
+          FanFicBinder is a browser tool for converting readable web fiction, fanfiction, and article pages into EPUB or Reader Mode HTML. Add chapters from readable web pages or paste text manually, then export a clean offline file for Kindle, Kobo, Apple Books, Edge Read Aloud, or another reading workflow.
         </p>
 
         <h3 className="text-xl font-bold text-foreground mb-3">How it Works</h3>
@@ -16,7 +16,7 @@ export function SeoArticle() {
           Most story pages are designed for browsers, not e-readers. FanFicBinder uses readability extraction to remove sidebars, ads, and comments where possible, leaving the chapter text for EPUB packaging.
         </p>
         <p className="leading-relaxed mb-4">
-          Use sequence fetching to collect multiple chapters in a row from supported sites such as AO3 or RoyalRoad, with manual entry available when a source blocks automated fetching.
+          Use sequence fetching to collect multiple chapters in a row from supported sites such as AO3 or Royal Road, with Manual Entry available when a source blocks automated fetching.
         </p>
         <p className="leading-relaxed mb-4">
           <strong>Reader Mode HTML:</strong> Prefer listening? Export your binder as a simple HTML file optimized for text-to-speech tools such as Edge Read Aloud, Safari Listen to Page, Speechify, or Voice Dream Reader.
@@ -36,6 +36,9 @@ export function SeoArticle() {
             </p>
             <p className="leading-relaxed mt-4">
               For step-by-step help, start with the <Link href="/guides/web-fiction-to-epub" className="text-primary hover:text-primary/80">web fiction to EPUB guide</Link>, the <Link href="/guides/reader-mode-html" className="text-primary hover:text-primary/80">Reader Mode HTML guide</Link>, or the <Link href="/guides/epub-to-ereader" className="text-primary hover:text-primary/80">EPUB to e-reader guide</Link>.
+            </p>
+            <p className="leading-relaxed mt-4">
+              Need a narrower answer? Browse the <Link href="/guides" className="text-primary hover:text-primary/80">full guide hub</Link> for fanfiction-to-EPUB workflows, Kindle delivery, offline reading, and fetch troubleshooting.
             </p>
           </div>
     </article>

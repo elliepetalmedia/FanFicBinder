@@ -8,12 +8,11 @@ export default function Privacy() {
 
   return (
     <PublicPageShell
+      route={seoRoutes.privacy}
       eyebrow="Privacy"
       title="Privacy Policy"
       description="How FanFicBinder handles URL fetching, local file generation, analytics, ads, cookies, and user-provided content."
     >
-      <p className="text-sm text-muted-foreground"><strong>Last updated:</strong> April 20, 2026</p>
-
       <PublicSection title="Local file generation">
         <p>
           FanFicBinder creates EPUB and Reader Mode HTML files in your browser. Manual chapter text, book metadata, and cover images are used to generate your download and are not stored in a FanFicBinder account or content database.

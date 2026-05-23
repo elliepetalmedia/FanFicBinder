@@ -3,6 +3,9 @@ import path from "node:path";
 import { renderToString } from "react-dom/server";
 import { PrerenderApp } from "./PrerenderApp";
 import {
+  buildLlmsFullTxt,
+  buildLlmsTxt,
+  buildRobotsTxt,
   DEFAULT_OG_IMAGE,
   buildSitemapXml,
   getCanonicalUrl,
@@ -127,6 +130,9 @@ async function prerender() {
   }
 
   await fs.writeFile(path.join(publicDir, "sitemap.xml"), buildSitemapXml(), "utf-8");
+  await fs.writeFile(path.join(publicDir, "robots.txt"), buildRobotsTxt(), "utf-8");
+  await fs.writeFile(path.join(publicDir, "llms.txt"), buildLlmsTxt(), "utf-8");
+  await fs.writeFile(path.join(publicDir, "llms-full.txt"), buildLlmsFullTxt(), "utf-8");
 }
 
 prerender().catch((error) => {

@@ -333,10 +333,10 @@ export default function Home() {
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="mb-8 text-center w-full mx-auto space-y-1">
           <p className="text-lg text-foreground/90">
-            FanFicBinder turns web fiction, fanfiction, and articles into clean EPUBs or reader mode HTML for offline reading.
+            FanFicBinder turns readable web fiction, fanfiction, and articles into EPUB or Reader Mode HTML for offline reading, e-readers, and text-to-speech.
           </p>
           <p className="text-sm text-muted-foreground">
-            Your binder stays on your device; URL fetching is only used to retrieve pages you request.
+            Best with readable chapter pages, AO3, Royal Road, and copied chapter text when a source blocks fetching. Your binder stays on your device.
           </p>
         </div>
 

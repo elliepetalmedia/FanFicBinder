@@ -8,9 +8,10 @@ export default function About() {
 
   return (
     <PublicPageShell
+      route={seoRoutes.about}
       eyebrow="About"
       title="About FanFicBinder"
-      description="FanFicBinder is a privacy-minded browser tool from Ellie Petal Media for turning long-form web reading into portable files."
+      description="FanFicBinder is a privacy-minded browser tool from Ellie Petal Media for turning long-form web reading into portable EPUB or Reader Mode HTML files."
     >
       <PublicSection title="Why this exists">
         <p>
@@ -33,6 +34,9 @@ export default function About() {
       <PublicSection title="Where to start">
         <p>
           Open the <Link href="/" className="text-primary hover:text-primary/80">binder tool</Link> to add chapters, or read the <Link href="/guides/web-fiction-to-epub" className="text-primary hover:text-primary/80">web fiction to EPUB guide</Link> for a step-by-step workflow.
+        </p>
+        <p>
+          If you are comparing workflows, start from the <Link href="/guides" className="text-primary hover:text-primary/80">guides hub</Link> to choose the closest match for your source site, device, or troubleshooting case.
         </p>
       </PublicSection>
     </PublicPageShell>

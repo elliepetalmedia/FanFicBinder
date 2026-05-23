@@ -9,6 +9,7 @@ export default function EpubToEreaderGuide() {
 
   return (
     <PublicPageShell
+      route={seoRoutes.epubToEreader}
       eyebrow="Guide"
       title="How to Move an EPUB to an E-reader"
       description="After you export an EPUB from FanFicBinder, use the transfer method that matches your reading device or app."
@@ -19,6 +20,9 @@ export default function EpubToEreaderGuide() {
         </p>
         <p>
           Amazon converts the EPUB into a Kindle-readable format during delivery. If the file does not appear, check that the book title and file size are reasonable and try again.
+        </p>
+        <p>
+          For a Kindle-specific checklist, read <Link href="/guides/send-epub-to-kindle" className="text-primary hover:text-primary/80">how to send an EPUB to Kindle</Link>.
         </p>
       </PublicSection>
 

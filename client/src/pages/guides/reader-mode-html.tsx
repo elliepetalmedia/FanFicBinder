@@ -9,9 +9,10 @@ export default function ReaderModeHtmlGuide() {
 
   return (
     <PublicPageShell
+      route={seoRoutes.readerModeHtml}
       eyebrow="Guide"
       title="Reader Mode HTML for Text-to-Speech"
-      description="Use Reader Mode HTML when you want a simple offline file for browser read-aloud tools, screen readers, and speech apps."
+      description="Use Reader Mode HTML when you want a simple offline file for browser read-aloud tools, screen readers, speech apps, and listening-first workflows."
     >
       <PublicSection title="What Reader Mode HTML is for">
         <p>
@@ -19,6 +20,9 @@ export default function ReaderModeHtmlGuide() {
         </p>
         <p>
           EPUB is usually better for Kindle, Kobo, and Apple Books libraries. Reader Mode HTML is usually better for Edge Read Aloud, Safari Listen to Page, and apps that import plain web documents.
+        </p>
+        <p>
+          If your main question is whether to read or listen offline, compare this format with the broader <Link href="/guides/read-fanfiction-offline" className="text-primary hover:text-primary/80">read fanfiction offline</Link> workflow.
         </p>
       </PublicSection>
 

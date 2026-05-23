@@ -8,9 +8,10 @@ export default function FAQ() {
 
   return (
     <PublicPageShell
+      route={seoRoutes.faq}
       eyebrow="FAQ"
       title="Frequently Asked Questions"
-      description="Answers about EPUB export, Reader Mode HTML, URL fetching, manual entry, privacy, and e-reader workflows."
+      description="Direct answers about EPUB export, Reader Mode HTML, URL fetching, manual entry, privacy, and e-reader workflows."
     >
       <PublicSection title="How does FanFicBinder work?">
         <p>
@@ -18,6 +19,9 @@ export default function FAQ() {
         </p>
         <p>
           Manual text, metadata, cover images, and export generation happen in your browser. URL fetching uses the first-party proxy only for pages you request.
+        </p>
+        <p>
+          For a broader set of step-by-step workflows, browse the <Link href="/guides" className="text-primary hover:text-primary/80">guides hub</Link>.
         </p>
       </PublicSection>
 
@@ -38,6 +42,9 @@ export default function FAQ() {
         </p>
         <p>
           FanFicBinder rejects private/internal URLs, unsupported protocols, non-HTML responses, and oversized responses for safety and predictability.
+        </p>
+        <p>
+          See <Link href="/guides/when-url-fetching-fails" className="text-primary hover:text-primary/80">what to do when URL fetching fails</Link> or the <Link href="/guides/manual-entry-for-blocked-sites" className="text-primary hover:text-primary/80">manual entry workflow</Link> for the clean fallback path.
         </p>
       </PublicSection>
 
