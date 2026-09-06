@@ -3,6 +3,8 @@ export interface Chapter {
   title: string;
   content: string;
   wordCount: number;
+  /** Canonical URL the chapter was imported from, when known. Used for dedupe/resume. */
+  sourceUrl?: string;
 }
 
 export interface BookMetadata {

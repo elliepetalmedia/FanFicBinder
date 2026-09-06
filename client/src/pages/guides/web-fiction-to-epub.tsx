@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { GuideLinks } from "@/components/public/GuideLinks";
+import { UrlEntryCta } from "@/components/public/UrlEntryCta";
 import { PublicPageShell, PublicSection } from "@/components/public/PublicPageShell";
 import { useSEO } from "@/hooks/useSEO";
 import { seoRoutes } from "@/lib/seo";
@@ -25,6 +26,12 @@ export default function WebFictionToEpubGuide() {
           If you are specifically working with fanfiction, AO3, or Royal Road, the <Link href="/guides" className="text-primary hover:text-primary/80">guides hub</Link> links to narrower workflows for those cases.
         </p>
       </PublicSection>
+
+      <UrlEntryCta
+        title="Convert a web fiction chapter"
+        description="Paste a readable chapter URL to continue in the binder, where chapters are collected in order and exported as EPUB."
+        inputLabel="Web fiction chapter URL"
+      />
 
       <PublicSection title="Build the binder chapter by chapter">
         <ol className="list-decimal pl-6 space-y-2">

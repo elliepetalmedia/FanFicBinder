@@ -11,9 +11,9 @@ export function SiteHeader() {
               <div className="bg-primary/10 p-2 rounded-lg">
                 <Book className="w-6 h-6 text-primary" />
               </div>
-              <h1 className="text-2xl font-bold tracking-tight font-serif text-foreground">
+              <span className="text-2xl font-bold tracking-tight font-serif text-foreground">
                 FanFic<span className="text-primary">Binder</span>
-              </h1>
+              </span>
             </Link>
           </div>
           <nav className="flex flex-wrap items-center gap-4 text-sm">

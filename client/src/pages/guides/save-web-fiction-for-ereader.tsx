@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { GuideLinks } from "@/components/public/GuideLinks";
+import { UrlEntryCta } from "@/components/public/UrlEntryCta";
 import { PublicPageShell, PublicSection } from "@/components/public/PublicPageShell";
 import { useSEO } from "@/hooks/useSEO";
 import { seoRoutes } from "@/lib/seo";
@@ -19,6 +20,12 @@ export default function SaveWebFictionForEreaderGuide() {
           The best way to save web fiction for an e-reader is to export a clean EPUB with a sensible title, author name, chapter order, and optional cover image. That gives the reading app or device the metadata it needs for a stable library entry.
         </p>
       </PublicSection>
+
+      <UrlEntryCta
+        title="Start an e-reader EPUB"
+        description="Paste the first readable chapter URL to continue in the binder, where the EPUB is assembled with stable title, author, and chapter order."
+        inputLabel="Story or chapter URL"
+      />
 
       <PublicSection title="Why EPUB is the right default">
         <p>

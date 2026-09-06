@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { GuideLinks } from "@/components/public/GuideLinks";
+import { UrlEntryCta } from "@/components/public/UrlEntryCta";
 import { PublicPageShell, PublicSection } from "@/components/public/PublicPageShell";
 import { useSEO } from "@/hooks/useSEO";
 import { seoRoutes } from "@/lib/seo";
@@ -19,6 +20,12 @@ export default function FanfictionToEpubGuide() {
           The simplest way to convert fanfiction to EPUB is to add readable chapter pages one by one, confirm the chapter text looks correct, and export the finished binder as EPUB. When a source blocks automated fetching, switch to Manual Entry instead of forcing a brittle workaround.
         </p>
       </PublicSection>
+
+      <UrlEntryCta
+        title="Convert a fanfiction chapter"
+        description="Paste the first readable chapter URL to continue in the binder, where chapters are collected in order and exported as EPUB."
+        inputLabel="Fanfiction chapter URL"
+      />
 
       <PublicSection title="Best workflow">
         <ol className="list-decimal pl-6 space-y-2">

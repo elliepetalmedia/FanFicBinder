@@ -10,13 +10,16 @@ interface CoverImageError {
 interface CoverImageState {
   coverImage: ArrayBuffer | null;
   coverPreview: string | null;
+  coverMimeType: string;
   handleCoverUpload: (event: ChangeEvent<HTMLInputElement>) => void;
   handleRemoveCover: () => void;
+  restoreCoverImage: (data: ArrayBuffer, mimeType?: string) => void;
 }
 
 export function useCoverImage(onError: (error: CoverImageError) => void): CoverImageState {
   const [coverImage, setCoverImage] = useState<ArrayBuffer | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [coverMimeType, setCoverMimeType] = useState<string>("image/jpeg");
 
   useEffect(() => {
     return () => {
@@ -49,6 +52,7 @@ export function useCoverImage(onError: (error: CoverImageError) => void): CoverI
     const previewUrl = URL.createObjectURL(file);
     if (coverPreview) URL.revokeObjectURL(coverPreview);
     setCoverPreview(previewUrl);
+    setCoverMimeType(file.type || "image/jpeg");
 
     const reader = new FileReader();
     reader.onload = (loadEvent) => {
@@ -64,12 +68,24 @@ export function useCoverImage(onError: (error: CoverImageError) => void): CoverI
     if (coverPreview) URL.revokeObjectURL(coverPreview);
     setCoverPreview(null);
     setCoverImage(null);
+    setCoverMimeType("image/jpeg");
+  };
+
+  const restoreCoverImage = (data: ArrayBuffer, mimeType?: string) => {
+    const mime = mimeType || "image/jpeg";
+    const previewUrl = URL.createObjectURL(new Blob([data], { type: mime }));
+    if (coverPreview) URL.revokeObjectURL(coverPreview);
+    setCoverPreview(previewUrl);
+    setCoverImage(data);
+    setCoverMimeType(mime);
   };
 
   return {
     coverImage,
     coverPreview,
+    coverMimeType,
     handleCoverUpload,
     handleRemoveCover,
+    restoreCoverImage,
   };
 }

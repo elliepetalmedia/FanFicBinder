@@ -1,4 +1,5 @@
 import { GuideLinks } from "@/components/public/GuideLinks";
+import { UrlEntryCta } from "@/components/public/UrlEntryCta";
 import { PublicPageShell, PublicSection } from "@/components/public/PublicPageShell";
 import { useSEO } from "@/hooks/useSEO";
 import { seoRoutes } from "@/lib/seo";
@@ -11,23 +12,33 @@ export default function Ao3ToEpubGuide() {
       route={seoRoutes.ao3ToEpub}
       eyebrow="Guide"
       title="AO3 to EPUB Workflow"
-      description="Use readable AO3 chapter pages with FanFicBinder when you want to build your own EPUB workflow, chapter order, and export metadata."
+      description="Import a public AO3 work with chapter preview, then export it as EPUB for offline reading and e-readers."
     >
       <PublicSection title="Direct answer">
         <p>
-          FanFicBinder works best with readable AO3 chapter pages opened in a normal browser tab. Paste one chapter URL at a time, review the fetched text, and export to EPUB after your chapter list is complete.
+          Paste an AO3 work or chapter URL into FanFicBinder, preview the detected title, author, and chapter list, then import the whole work in reading order and export it as EPUB.
         </p>
       </PublicSection>
 
-      <PublicSection title="Why use this workflow">
-        <p>
-          This path is useful when you want to control chapter order, merge selected chapters into a single file, or set your own title, author, and cover before export.
-        </p>
+      <UrlEntryCta
+        title="Import an AO3 work"
+        description="Paste an AO3 work or chapter URL to continue in the binder, where the chapter list is detected before anything is imported."
+        placeholder="https://archiveofourown.org/works/..."
+        inputLabel="AO3 work or chapter URL"
+      />
+
+      <PublicSection title="How whole-work import works">
+        <ol className="list-decimal pl-6 space-y-2">
+          <li>Paste a public AO3 work or chapter URL.</li>
+          <li>Preview the detected title, author, and ordered chapter list.</li>
+          <li>Import all chapters in order with visible progress. Stop any time and keep the chapters that already arrived.</li>
+          <li>Set the cover and formatting, then export the binder as EPUB.</li>
+        </ol>
       </PublicSection>
 
-      <PublicSection title="Important constraint">
+      <PublicSection title="When fetching is blocked">
         <p>
-          The reliable signal is page readability, not site branding alone. If the AO3 page is not exposed cleanly through the fetch path, switch to Manual Entry for that chapter and keep the rest of the binder intact.
+          Whole-work import supports publicly accessible works only. Login-restricted works, adult-consent gates that cannot be confirmed automatically, and rate-limited pages will not import. In those cases, copy the chapter text from your browser and use Manual Entry instead — the EPUB output is the same.
         </p>
       </PublicSection>
 

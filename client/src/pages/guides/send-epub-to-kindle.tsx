@@ -1,4 +1,5 @@
 import { GuideLinks } from "@/components/public/GuideLinks";
+import { UrlEntryCta } from "@/components/public/UrlEntryCta";
 import { PublicPageShell, PublicSection } from "@/components/public/PublicPageShell";
 import { useSEO } from "@/hooks/useSEO";
 import { seoRoutes } from "@/lib/seo";
@@ -18,6 +19,12 @@ export default function SendEpubToKindleGuide() {
           After exporting an EPUB from FanFicBinder, use Amazon's Send to Kindle app, web uploader, or approved email workflow. Amazon handles the conversion during delivery, so the file should appear in your Kindle library after processing.
         </p>
       </PublicSection>
+
+      <UrlEntryCta
+        title="Converting another story?"
+        description="Paste a story or chapter URL to start a new binder in the main converter, then send the fresh EPUB to Kindle."
+        inputLabel="Story or chapter URL"
+      />
 
       <PublicSection title="Simple checklist">
         <ol className="list-decimal pl-6 space-y-2">

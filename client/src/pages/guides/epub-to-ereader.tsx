@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { GuideLinks } from "@/components/public/GuideLinks";
+import { UrlEntryCta } from "@/components/public/UrlEntryCta";
 import { PublicPageShell, PublicSection } from "@/components/public/PublicPageShell";
 import { useSEO } from "@/hooks/useSEO";
 import { seoRoutes } from "@/lib/seo";
@@ -14,10 +15,17 @@ export default function EpubToEreaderGuide() {
       title="How to Move an EPUB to an E-reader"
       description="After you export an EPUB from FanFicBinder, use the transfer method that matches your reading device or app."
     >
+            <UrlEntryCta
+        title="Converting another story?"
+        description="Paste a story or chapter URL to start a new binder in the main converter, then move the fresh EPUB to your e-reader."
+        inputLabel="Story or chapter URL"
+      />
+
       <PublicSection title="Kindle">
         <p>
           Kindle devices work best through Amazon Send to Kindle. Download the EPUB from FanFicBinder, then send it through Amazon's Send to Kindle app, web uploader, or approved email address.
         </p>
+
         <p>
           Amazon converts the EPUB into a Kindle-readable format during delivery. If the file does not appear, check that the book title and file size are reasonable and try again.
         </p>

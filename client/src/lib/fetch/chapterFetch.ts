@@ -32,7 +32,7 @@ async function readProxyError(response: Response): Promise<string> {
   return response.statusText || `HTTP ${response.status}`;
 }
 
-async function fetchViaFirstPartyProxy(url: string): Promise<string> {
+export async function fetchViaFirstPartyProxy(url: string): Promise<string> {
   const parsed = validateFetchUrl(url);
   const response = await fetch(`/api/proxy?url=${encodeURIComponent(parsed.toString())}`);
 
@@ -67,11 +67,13 @@ function fallbackArticle(doc: Document, title: string, content: string): Readabi
   };
 }
 
+/**
+ * Generic fallback extraction for ordinary readable pages.
+ *
+ * Source-specific selectors (e.g. AO3) live in the source-adapter layer
+ * (`@/lib/sources`) and must not be added here.
+ */
 export function findFallbackContent(doc: Document, url: string): string {
-  if (url.includes("archiveofourown.org")) {
-    return doc.querySelector("#workskin")?.innerHTML || "";
-  }
-
   if (url.includes("royalroad.com")) {
     return doc.querySelector(".chapter-content")?.innerHTML || "";
   }
@@ -85,12 +87,13 @@ export function findFallbackContent(doc: Document, url: string): string {
   return articleTag?.innerHTML || "";
 }
 
+/**
+ * Generic next-chapter guessing for ordinary readable pages.
+ *
+ * AO3 whole-work imports use a deterministic chapter manifest instead
+ * (`@/lib/importer/workImporter`) and must not rely on this traversal.
+ */
 export function findNextChapterUrl(doc: Document, url: string): string | null {
-  if (url.includes("archiveofourown.org")) {
-    const ao3Next = doc.querySelector("li.chapter.next a");
-    if (ao3Next) return (ao3Next as HTMLAnchorElement).href;
-  }
-
   if (url.includes("royalroad.com")) {
     const rrNext = Array.from(doc.querySelectorAll("a")).find(
       (anchor) =>
