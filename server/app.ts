@@ -15,6 +15,16 @@ export function log(message: string, source = "express") {
 }
 
 export const app = express();
+app.disable("x-powered-by");
+app.use((_req, res, next) => {
+  res.set({
+    "Permissions-Policy": "camera=(), geolocation=(), microphone=()",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+  });
+  next();
+});
 
 declare module 'http' {
   interface IncomingMessage {
@@ -22,11 +32,12 @@ declare module 'http' {
   }
 }
 app.use(express.json({
+  limit: "100kb",
   verify: (req, _res, buf) => {
     req.rawBody = buf;
   }
 }));
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: false, limit: "100kb", parameterLimit: 100 }));
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -65,10 +76,9 @@ export default async function runApp(
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-
+    const message = status < 500 ? err.message || "Request failed" : "Internal Server Error";
+    if (status >= 500) console.error(err);
     res.status(status).json({ message });
-    throw err;
   });
 
   // importantly run the final setup after setting up all the other routes so

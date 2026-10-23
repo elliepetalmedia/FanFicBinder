@@ -5,3 +5,6 @@ server/public
 vite.config.ts.*
 *.tar.gz
 opencode.json
+.env
+.env.*
+!.env.example

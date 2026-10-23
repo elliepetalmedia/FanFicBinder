@@ -17,7 +17,7 @@ import {
   saveBinderSnapshot,
   serializeBinder,
 } from "../client/src/lib/persistence/binderStore";
-import { sanitizeContent } from "../client/src/lib/content/sanitize";
+import { isSafeContentUrl, sanitizeContent } from "../client/src/lib/content/sanitize";
 import { validateFetchUrl } from "../client/src/lib/fetch/chapterFetch";
 import {
   fetchAo3WorkManifest,
@@ -34,6 +34,14 @@ import {
   parseAo3WorkId,
 } from "../client/src/lib/sources/ao3";
 import { getAdapterForUrl, supportsWholeWork } from "../client/src/lib/sources/index";
+import {
+  createPinnedAgents,
+  isBlockedAddress,
+  isCrossSiteRequest,
+  isReadableContentType,
+  resolveAllowedTarget,
+} from "../shared/proxy-fetch";
+import { createHandler } from "../functions/proxy.js";
 import {
   buildLlmsFullTxt,
   buildLlmsTxt,
@@ -58,8 +66,72 @@ function testSanitizerFallback() {
   const sanitized = sanitizeContent(`<p onclick="bad()">Safe</p><script>alert(1)</script>`);
 
   assert.match(sanitized, /Safe/);
-  assert.doesNotMatch(sanitized, /script/i);
-  assert.doesNotMatch(sanitized, /onclick/i);
+  assert.doesNotMatch(sanitized, /<script/i);
+  assert.match(sanitized, /&lt;script&gt;/i);
+  assert.equal(isSafeContentUrl("java\tscript:alert(1)", "a", "href"), false);
+  assert.equal(isSafeContentUrl("javascript&#58;alert(1)", "a", "href"), false);
+  assert.equal(isSafeContentUrl("https://example.com/chapter", "a", "href"), true);
+  assert.equal(isSafeContentUrl("data:image/svg+xml,<svg onload=alert(1)>", "img", "src"), false);
+  assert.equal(isSafeContentUrl("data:image/png;base64,AAAA", "img", "src"), true);
+}
+
+async function testProxySecurityBoundaries() {
+  for (const address of [
+    "127.0.0.1", "10.0.0.1", "169.254.169.254", "100.100.100.200", "::1", "::ffff:127.0.0.1", "fe90::1",
+  ]) {
+    assert.equal(isBlockedAddress(address), true, `${address} must be blocked`);
+  }
+  assert.equal(isBlockedAddress("8.8.8.8"), false);
+  assert.equal(isBlockedAddress("2606:4700:4700::1111"), false);
+
+  const publicLookup = async () => [{ address: "93.184.216.34", family: 4 }];
+  const target = await resolveAllowedTarget("https://example.com/story", publicLookup);
+  assert.equal(target.address, "93.184.216.34");
+  await assert.rejects(
+    resolveAllowedTarget("https://example.com/story", async () => [
+      { address: "93.184.216.34", family: 4 },
+      { address: "127.0.0.1", family: 4 },
+    ]),
+    /private network/i,
+  );
+  await assert.rejects(resolveAllowedTarget("http://127.0.0.1/"), /private network/i);
+  await assert.rejects(resolveAllowedTarget("https://user:pass@example.com/"), /credentials/i);
+  await assert.rejects(resolveAllowedTarget("https://example.com:8443/", publicLookup), /standard/i);
+
+  const lookup = createPinnedAgents(target).httpsAgent.options.lookup as Function;
+  await new Promise<void>((resolve, reject) => {
+    lookup("example.com", {}, (error: Error | null, address: string, family: number) => {
+      if (error) return reject(error);
+      try {
+        assert.equal(address, "93.184.216.34");
+        assert.equal(family, 4);
+        resolve();
+      } catch (assertionError) {
+        reject(assertionError);
+      }
+    });
+  });
+
+  assert.equal(isReadableContentType("text/html; charset=utf-8"), true);
+  assert.equal(isReadableContentType("text/plain"), true);
+  assert.equal(isReadableContentType("text/css"), false);
+  assert.equal(isReadableContentType("application/javascript"), false);
+  assert.equal(isCrossSiteRequest({ origin: "https://evil.example" }, new URL("https://fanficbinder.com/api/proxy")), true);
+
+  const handler = createHandler(async () => "<script>alert(document.origin)</script>");
+  const success = await handler(new Request("https://fanficbinder.com/api/proxy?url=https://example.com"));
+  assert.equal(success.status, 200);
+  assert.equal(success.headers.get("content-type"), "text/plain; charset=utf-8");
+  assert.equal(success.headers.get("x-content-type-options"), "nosniff");
+  assert.equal(success.headers.get("access-control-allow-origin"), null);
+  assert.match(await success.text(), /<script>/);
+
+  const crossSite = await handler(new Request("https://fanficbinder.com/api/proxy?url=https://example.com", {
+    headers: { Origin: "https://evil.example" },
+  }));
+  assert.equal(crossSite.status, 403);
+  const post = await handler(new Request("https://fanficbinder.com/api/proxy", { method: "POST" }));
+  assert.equal(post.status, 405);
 }
 
 function testFetchUrlValidation() {
@@ -613,6 +685,7 @@ function testCrawlerArtifacts() {
 
 testChapterHelpers();
 testSanitizerFallback();
+await testProxySecurityBoundaries();
 testFetchUrlValidation();
 testAo3UrlRecognition();
 testAo3Normalization();

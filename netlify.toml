@@ -6,13 +6,19 @@
 [functions]
   node_bundler = "esbuild"
 
-# 1. Connect the Frontend (API) to the Backend (Function)
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/:splat"
-  status = 200
+# The proxy function owns /api/proxy through its exported config. This also
+# removes the default /.netlify/functions/proxy alias and applies edge limits.
 
-# 2. SPA Fallback (Prevents 404s on reload)
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "base-uri 'self'; object-src 'none'; frame-ancestors 'none'"
+    Permissions-Policy = "camera=(), geolocation=(), microphone=()"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+
+# SPA fallback (prevents 404s on reload)
 [[redirects]]
   from = "/*"
   to = "/index.html"

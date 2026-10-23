@@ -1,210 +1,63 @@
 import type { Express } from "express";
-import { createServer, type Server } from "http";
-import axios from "axios";
-import dns from "node:dns/promises";
-import net from "node:net";
+import { createServer, type Server } from "node:http";
 
-const MAX_REDIRECTS = 5;
-const MAX_RESPONSE_BYTES = 5 * 1024 * 1024;
-const FETCH_TIMEOUT_MS = 10000;
+import { fetchReadableContent, isCrossSiteRequest, proxyErrorResponse } from "../shared/proxy-fetch";
 
-const USER_AGENTS = [
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
-  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15",
-];
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX_REQUESTS = 30;
+const RATE_LIMIT_MAX_CLIENTS = 10_000;
+const proxyRateLimits = new Map<string, { count: number; resetAt: number }>();
 
-class ProxyRequestError extends Error {
-  constructor(
-    public statusCode: number,
-    message: string,
-  ) {
-    super(message);
-  }
-}
-
-function isPrivateIpv4(address: string): boolean {
-  const parts = address.split(".").map(Number);
-  const [a, b] = parts;
-
-  return (
-    a === 0 ||
-    a === 10 ||
-    (a === 100 && b >= 64 && b <= 127) ||
-    a === 127 ||
-    (a === 172 && b >= 16 && b <= 31) ||
-    (a === 192 && b === 0) ||
-    (a === 192 && b === 168) ||
-    (a === 169 && b === 254) ||
-    (a === 198 && (b === 18 || b === 19)) ||
-    a >= 224
-  );
-}
-
-function isPrivateIpv6(address: string): boolean {
-  const normalized = address.toLowerCase();
-
-  return (
-    normalized === "::1" ||
-    normalized === "::" ||
-    normalized.startsWith("::ffff:") ||
-    normalized.startsWith("2001:db8:") ||
-    normalized.startsWith("fc") ||
-    normalized.startsWith("fd") ||
-    normalized.startsWith("fe80:")
-  );
-}
-
-function isBlockedAddress(address: string): boolean {
-  const version = net.isIP(address);
-
-  if (version === 4) return isPrivateIpv4(address);
-  if (version === 6) return isPrivateIpv6(address);
-
-  return true;
-}
-
-async function assertAllowedUrl(rawUrl: string): Promise<URL> {
-  let parsed: URL;
-
-  try {
-    parsed = new URL(rawUrl);
-  } catch {
-    throw new ProxyRequestError(400, "Enter a valid URL.");
-  }
-
-  if (!["http:", "https:"].includes(parsed.protocol)) {
-    throw new ProxyRequestError(400, "Only HTTP and HTTPS URLs can be fetched.");
-  }
-
-  const hostname = parsed.hostname.toLowerCase();
-  if (!hostname || hostname === "localhost" || hostname.endsWith(".localhost")) {
-    throw new ProxyRequestError(400, "Local and private network URLs cannot be fetched.");
-  }
-
-  const directIpVersion = net.isIP(hostname);
-  if (directIpVersion && isBlockedAddress(hostname)) {
-    throw new ProxyRequestError(400, "Local and private network URLs cannot be fetched.");
-  }
-
-  try {
-    const addresses = await dns.lookup(hostname, { all: true });
-    if (addresses.length === 0 || addresses.some(({ address }) => isBlockedAddress(address))) {
-      throw new ProxyRequestError(400, "Local and private network URLs cannot be fetched.");
+function isRateLimited(clientId: string, now = Date.now()): boolean {
+  const existing = proxyRateLimits.get(clientId);
+  if (!existing || existing.resetAt <= now) {
+    if (!existing && proxyRateLimits.size >= RATE_LIMIT_MAX_CLIENTS) {
+      const oldest = proxyRateLimits.keys().next().value;
+      if (oldest) proxyRateLimits.delete(oldest);
     }
-  } catch (error) {
-    if (error instanceof ProxyRequestError) throw error;
-    throw new ProxyRequestError(400, "The URL host could not be resolved.");
+    proxyRateLimits.set(clientId, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return false;
   }
-
-  return parsed;
-}
-
-function isReadableContentType(contentType: string): boolean {
-  const normalized = contentType.toLowerCase();
-
-  return (
-    normalized.includes("text/html") ||
-    normalized.includes("application/xhtml+xml") ||
-    normalized.startsWith("text/plain") ||
-    normalized.startsWith("text/")
-  );
-}
-
-async function fetchReadableContent(initialUrl: string): Promise<string> {
-  let currentUrl = await assertAllowedUrl(initialUrl);
-  const userAgent = USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
-
-  for (let redirectCount = 0; redirectCount <= MAX_REDIRECTS; redirectCount++) {
-    const response = await axios.get<string>(currentUrl.toString(), {
-      headers: {
-        "User-Agent": userAgent,
-        "Accept": "text/html,application/xhtml+xml,text/plain;q=0.9,*/*;q=0.5",
-        "Accept-Language": "en-US,en;q=0.5",
-        "DNT": "1",
-        "Upgrade-Insecure-Requests": "1",
-      },
-      timeout: FETCH_TIMEOUT_MS,
-      maxRedirects: 0,
-      maxContentLength: MAX_RESPONSE_BYTES,
-      responseType: "text",
-      transformResponse: [(data) => data],
-      validateStatus: () => true,
-    });
-
-    if (response.status >= 300 && response.status < 400) {
-      const location = response.headers.location;
-      if (!location) {
-        throw new ProxyRequestError(502, "The source site returned a redirect without a destination.");
-      }
-
-      if (redirectCount === MAX_REDIRECTS) {
-        throw new ProxyRequestError(502, "The source site redirected too many times.");
-      }
-
-      currentUrl = await assertAllowedUrl(new URL(location, currentUrl).toString());
-      continue;
-    }
-
-    if (response.status === 429) {
-      throw new ProxyRequestError(429, "The source site is rate limiting requests. Wait a bit, then try again.");
-    }
-
-    if (response.status === 404) {
-      throw new ProxyRequestError(404, "The source URL was not found.");
-    }
-
-    if (response.status >= 400) {
-      throw new ProxyRequestError(response.status, `The source site returned HTTP ${response.status}.`);
-    }
-
-    const contentLength = Number(response.headers["content-length"]);
-    if (Number.isFinite(contentLength) && contentLength > MAX_RESPONSE_BYTES) {
-      throw new ProxyRequestError(413, "The source page is too large to import.");
-    }
-
-    const contentType = String(response.headers["content-type"] || "");
-    if (!isReadableContentType(contentType)) {
-      throw new ProxyRequestError(415, "The source URL did not return a readable HTML or text page.");
-    }
-
-    return response.data;
-  }
-
-  throw new ProxyRequestError(502, "The source site redirected too many times.");
+  existing.count += 1;
+  return existing.count > RATE_LIMIT_MAX_REQUESTS;
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // CORS Proxy endpoint for fetching external content
   app.get("/api/proxy", async (req, res) => {
-    const { url } = req.query;
+    if (isRateLimited(req.ip || req.socket.remoteAddress || "unknown")) {
+      return res.status(429).set("Retry-After", "60").json({ error: "Too many proxy requests. Try again shortly." });
+    }
 
+    const requestUrl = new URL(req.originalUrl, `${req.protocol}://${req.get("host")}`);
+    const headers = Object.fromEntries(
+      Object.entries(req.headers).map(([name, value]) => [name, Array.isArray(value) ? value[0] : value]),
+    );
+
+    if (isCrossSiteRequest(headers, requestUrl)) {
+      return res.status(403).json({ error: "Cross-site proxy requests are not allowed." });
+    }
+
+    const { url } = req.query;
     if (!url || typeof url !== "string") {
       return res.status(400).json({ error: "Enter a URL to fetch." });
     }
 
     try {
-      const html = await fetchReadableContent(url);
-      res.status(200).type("text/html; charset=utf-8").send(html);
+      const content = await fetchReadableContent(url);
+      return res
+        .status(200)
+        .set({
+          "Cache-Control": "no-store",
+          "Content-Security-Policy": "default-src 'none'; sandbox",
+          "Content-Type": "text/plain; charset=utf-8",
+          "X-Content-Type-Options": "nosniff",
+        })
+        .send(content);
     } catch (error) {
-      if (error instanceof ProxyRequestError) {
-        return res.status(error.statusCode).json({ error: error.message });
-      }
-
-      if (axios.isAxiosError(error) && error.code === "ECONNABORTED") {
-        return res.status(504).json({ error: "The source site took too long to respond." });
-      }
-
-      if (axios.isAxiosError(error) && error.message.includes("maxContentLength")) {
-        return res.status(413).json({ error: "The source page is too large to import." });
-      }
-
-      res.status(502).json({ error: "The source page could not be fetched." });
+      const response = proxyErrorResponse(error);
+      return res.status(response.status).json({ error: response.message });
     }
   });
 
-  const httpServer = createServer(app);
-
-  return httpServer;
+  return createServer(app);
 }
