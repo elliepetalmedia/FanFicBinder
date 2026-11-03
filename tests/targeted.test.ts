@@ -484,6 +484,10 @@ function testCorrectedGuideClaims() {
   assert.match(ao3Html, /no reordering controls/);
   assert.match(ao3Html, /Do not run Import All after a manual addition/);
   assert.doesNotMatch(ao3Html, /add the remaining chapters with Manual Entry in order/);
+  assert.match(ao3Html, /If you are still in the same session, click Import All again/);
+  assert.match(ao3Html, /Resume Import to restore the preview, and then click Import All/);
+  assert.match(ao3Html, /Resume Import on its own does not fetch chapters/);
+  assert.doesNotMatch(ao3Html, /continue from there with Resume Import/);
 
   const readOfflineHtml = readRouteHtml(seoRoutes.readFanfictionOffline.path);
   assert.match(readOfflineHtml, /Listening offline is different/);
