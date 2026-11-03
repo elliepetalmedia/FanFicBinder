@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import { GuideLinks } from "@/components/public/GuideLinks";
 import { PublicPageShell, PublicSection } from "@/components/public/PublicPageShell";
+import { UrlEntryCta } from "@/components/public/UrlEntryCta";
 import { useSEO } from "@/hooks/useSEO";
 import { seoRoutes } from "@/lib/seo";
 
@@ -16,9 +17,19 @@ export default function WebSerialToEpubGuide() {
     >
       <PublicSection title="Direct answer">
         <p>
-          The cleanest way to convert a web serial to EPUB is to start from a readable chapter page, add chapters in order, and use sequence fetching only when the source has obvious next-chapter navigation. If a later page fails, stop there and continue with Manual Entry instead of losing the binder structure.
+          The cleanest way to convert a web serial to EPUB is to start from a readable chapter page, add chapters in order, and use sequence fetching only when the source has obvious next-chapter navigation. If a later page fails, stop there and continue with Manual Entry, adding chapters in reading order from that point, instead of losing the binder structure.
+        </p>
+        <p>
+          A web serial is different from a single short story: the value is the reading order, the chapter list, and a file you can finish over weeks. That is why this guide focuses on order and progress first, and on speed second.
         </p>
       </PublicSection>
+
+      <UrlEntryCta
+        title="Convert a web serial chapter"
+        description="Paste the first readable chapter URL to continue in the binder, where chapters are collected in order and exported as EPUB."
+        placeholder="https://example.com/story/chapter-1"
+        inputLabel="Web serial chapter URL"
+      />
 
       <PublicSection title="Sequence fetching works best when">
         <ul className="list-disc pl-6 space-y-2">
@@ -28,9 +39,45 @@ export default function WebSerialToEpubGuide() {
         </ul>
       </PublicSection>
 
+      <PublicSection title="Automated sequence limit">
+        <p>
+          One automated sequence run stops after 51 chapters. The tool's message says it stopped after 50 chapters, but the run actually adds a 51st chapter before stopping, so plan on 51 as the practical limit for a single run. This limit applies to sequence fetching only. It does not apply to AO3 whole-work import, which follows the work's chapter list instead.
+        </p>
+        <p>
+          To continue past 51 chapters, start a new sequence run from the next chapter you have not yet added, or add the remaining chapters manually in reading order. Both paths append after the chapters already in the binder, so the order stays correct as long as you do not re-fetch chapters that are already there.
+        </p>
+      </PublicSection>
+
+      <PublicSection title="Keep a long serial in order">
+        <ol className="list-decimal pl-6 space-y-2">
+          <li>Start from chapter 1, or from the earliest chapter you want to keep, so the binder does not start mid-story.</li>
+          <li>Check the chapter titles after each fetch. A wrong title usually means the extractor picked up navigation, comments, or an unrelated page.</li>
+          <li>Set the book title and author before you export, so a long serial is easy to find later in your e-reader library.</li>
+          <li>Export a partial EPUB if you want to start reading now. You can keep the binder on the same device and browser and add later chapters, then export again.</li>
+        </ol>
+        <p>
+          For a source with its own whole-work import, use that path instead. The <Link href="/guides/ao3-to-epub" className="text-primary hover:text-primary/80">AO3 to EPUB guide</Link> covers chapter preview and whole-work import, and the <Link href="/guides/royal-road-to-epub" className="text-primary hover:text-primary/80">Royal Road to EPUB guide</Link> covers sequence-friendly Royal Road chapters.
+        </p>
+      </PublicSection>
+
       <PublicSection title="When to stop the automated path">
         <p>
           Stop if the site returns rate-limit errors, the next page loops incorrectly, or the text extraction becomes unreliable. The <Link href="/guides/when-url-fetching-fails" className="text-primary hover:text-primary/80">URL fetching failure guide</Link> covers the recovery path.
+        </p>
+        <p>
+          Do not push through a rate limit by retrying the same sequence repeatedly. Copy the remaining chapters with <Link href="/guides/manual-entry-for-blocked-sites" className="text-primary hover:text-primary/80">Manual Entry</Link> instead, in reading order, starting from the next chapter after the last one already in the binder. The EPUB output is the same, and the chapter order is the part worth protecting.
+        </p>
+      </PublicSection>
+
+      <PublicSection title="Common questions">
+        <p>
+          <strong>How many chapters can I bind?</strong> There is no single limit on the size of a binder itself, but one automated sequence run stops after 51 chapters, as described above. A source can still stop a sequence earlier if its pages are not readable, its navigation is unstable, or it rate-limits the run. If a sequence stops, start a new run from the next chapter, or switch to Manual Entry for the rest, rather than forcing the same automated path again.
+        </p>
+        <p>
+          <strong>What if the next-chapter link breaks halfway through?</strong> Keep the chapters already in the binder, export them if you want to start reading, and add the remaining chapters manually in reading order, starting from the next chapter after the last one already in the binder. Do not restart the whole serial unless the chapter order is actually wrong.
+        </p>
+        <p>
+          <strong>Can I read a serial offline on Kindle or Kobo?</strong> Yes, once the EPUB is exported. The <Link href="/guides/epub-to-ereader" className="text-primary hover:text-primary/80">EPUB to e-reader guide</Link> and the <Link href="/guides/send-epub-to-kindle" className="text-primary hover:text-primary/80">Send EPUB to Kindle guide</Link> cover the transfer step after export.
         </p>
       </PublicSection>
 

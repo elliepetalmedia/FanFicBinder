@@ -38,6 +38,9 @@ export function SeoArticle() {
               For step-by-step help, start with the <Link href="/guides/web-fiction-to-epub" className="text-primary hover:text-primary/80">web fiction to EPUB guide</Link>, the <Link href="/guides/reader-mode-html" className="text-primary hover:text-primary/80">Reader Mode HTML guide</Link>, or the <Link href="/guides/epub-to-ereader" className="text-primary hover:text-primary/80">EPUB to e-reader guide</Link>.
             </p>
             <p className="leading-relaxed mt-4">
+              For a specific source or destination, see the <Link href="/guides/ao3-to-epub" className="text-primary hover:text-primary/80">AO3 to EPUB guide</Link>, the <Link href="/guides/web-serial-to-epub" className="text-primary hover:text-primary/80">web serial to EPUB guide</Link>, the <Link href="/guides/read-fanfiction-offline" className="text-primary hover:text-primary/80">read fanfiction offline guide</Link>, or the <Link href="/guides/send-epub-to-kindle" className="text-primary hover:text-primary/80">send EPUB to Kindle guide</Link>.
+            </p>
+            <p className="leading-relaxed mt-4">
               Need a narrower answer? Browse the <Link href="/guides" className="text-primary hover:text-primary/80">full guide hub</Link> for fanfiction-to-EPUB workflows, Kindle delivery, offline reading, and fetch troubleshooting.
             </p>
           </div>

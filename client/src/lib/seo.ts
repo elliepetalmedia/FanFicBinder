@@ -12,6 +12,8 @@ export interface SeoRoute {
   title: string;
   description: string;
   llmSummary: string;
+  /** Guide ids shown in Related guides, complementing body links, never the current page. */
+  relatedGuideIds?: string[];
   changefreq: "weekly" | "monthly" | "yearly";
   lastModified: string;
   priority: string;
@@ -167,7 +169,7 @@ export const seoRoutes = {
     description: "Convert web fiction, fanfiction, and readable articles into EPUB or Reader Mode HTML for offline reading, e-readers, and text-to-speech.",
     llmSummary: "Homepage and primary tool for turning readable web pages or pasted chapters into EPUB or Reader Mode HTML files.",
     changefreq: "weekly",
-    lastModified: "2026-05-22",
+    lastModified: "2026-11-02",
     priority: "1.0",
     ogType: "website",
     twitterCard: "summary_large_image",
@@ -263,6 +265,7 @@ export const seoRoutes = {
     title: "How to Turn Web Fiction into EPUB Files - FanFicBinder",
     description: "Learn how to convert web fiction, fanfiction, and readable articles into EPUB files for offline reading and e-readers.",
     llmSummary: "Step-by-step guide for building an EPUB from readable web fiction pages or manually pasted chapters.",
+    relatedGuideIds: ["fanfictionToEpub", "webSerialToEpub", "readerModeHtml", "readFanfictionOffline", "saveWebFictionForEreader"],
     changefreq: "monthly",
     lastModified: "2026-05-22",
     priority: "0.8",
@@ -295,6 +298,7 @@ export const seoRoutes = {
     title: "How to Convert Fanfiction to EPUB - FanFicBinder",
     description: "Convert fanfiction into EPUB files for Kindle, Kobo, Apple Books, and offline reading, with manual-entry fallback when a site blocks fetching.",
     llmSummary: "Answer page for fanfiction to EPUB workflows, including URL fetching, manual entry fallback, and device transfer.",
+    relatedGuideIds: ["ao3ToEpub", "webSerialToEpub", "readFanfictionOffline", "sendEpubToKindle", "readerModeHtml"],
     changefreq: "monthly",
     lastModified: "2026-05-22",
     priority: "0.82",
@@ -325,10 +329,11 @@ export const seoRoutes = {
     navLabel: "Web Serial to EPUB",
     breadcrumbLabel: "Web Serial to EPUB",
     title: "How to Convert a Web Serial to EPUB - FanFicBinder",
-    description: "Save a web serial as EPUB by fetching readable chapters in order, using sequence detection when it works, and switching to manual entry when it does not.",
+    description: "Convert a long-running web serial to EPUB chapter by chapter, keep reading order and progress, use sequence fetching when next-chapter links are stable, and switch to manual entry when a sequence breaks.",
     llmSummary: "Guide focused on chapter-by-chapter web serial workflows, sequence fetching, and predictable EPUB assembly.",
+    relatedGuideIds: ["webFictionToEpub", "fanfictionToEpub", "readFanfictionOffline", "saveWebFictionForEreader", "readerModeHtml"],
     changefreq: "monthly",
-    lastModified: "2026-05-22",
+    lastModified: "2026-11-02",
     priority: "0.8",
     ogType: "article",
     twitterCard: "summary_large_image",
@@ -356,11 +361,12 @@ export const seoRoutes = {
     path: "/guides/ao3-to-epub",
     navLabel: "AO3 to EPUB",
     breadcrumbLabel: "AO3 to EPUB",
-    title: "AO3 to EPUB Workflow - FanFicBinder",
-    description: "Import a public AO3 work with chapter preview into FanFicBinder, then export it as an EPUB for offline reading and e-readers.",
+    title: "How to Export AO3 to EPUB - FanFicBinder",
+    description: "Export an AO3 work to EPUB with FanFicBinder: import a public work with chapter preview, check title, author, and chapter order, then export a custom EPUB for offline reading.",
     llmSummary: "AO3-specific guidance for whole-work import with chapter preview, chapter ordering, and EPUB export for public works.",
+    relatedGuideIds: ["webFictionToEpub", "fanfictionToEpub", "webSerialToEpub", "royalRoadToEpub", "readerModeHtml", "fetchBlocked"],
     changefreq: "monthly",
-    lastModified: "2026-05-22",
+    lastModified: "2026-11-02",
     priority: "0.78",
     ogType: "article",
     twitterCard: "summary_large_image",
@@ -391,6 +397,7 @@ export const seoRoutes = {
     title: "Royal Road to EPUB Workflow - FanFicBinder",
     description: "Create an EPUB from readable Royal Road chapters with FanFicBinder, using sequence fetching when chapter navigation is exposed cleanly.",
     llmSummary: "Royal Road-specific guidance for sequence-friendly chapter fetching and EPUB export.",
+    relatedGuideIds: ["ao3ToEpub", "webSerialToEpub", "fanfictionToEpub", "sendEpubToKindle", "fetchBlocked", "manualEntry"],
     changefreq: "monthly",
     lastModified: "2026-05-22",
     priority: "0.78",
@@ -423,6 +430,7 @@ export const seoRoutes = {
     title: "Reader Mode HTML for Text-to-Speech - FanFicBinder",
     description: "Use Reader Mode HTML for browser read-aloud tools, screen readers, speech apps, and offline listening workflows.",
     llmSummary: "Guide explaining when Reader Mode HTML is better than EPUB for browser read-aloud tools and speech apps.",
+    relatedGuideIds: ["webFictionToEpub", "fanfictionToEpub", "epubToEreader", "sendEpubToKindle", "saveWebFictionForEreader"],
     changefreq: "monthly",
     lastModified: "2026-05-22",
     priority: "0.8",
@@ -453,10 +461,11 @@ export const seoRoutes = {
     navLabel: "Read Fanfiction Offline",
     breadcrumbLabel: "Read Fanfiction Offline",
     title: "How to Read Fanfiction Offline - FanFicBinder",
-    description: "Turn fanfiction chapters into EPUB or Reader Mode HTML so you can read or listen offline on Kindle, Kobo, Apple Books, or a browser.",
+    description: "Read fanfiction offline on Kindle, Kobo, Apple Books, or a phone: download an EPUB once, or use Reader Mode HTML for read-aloud. Reading works offline; listening depends on your app and offline voices.",
     llmSummary: "Answer page for offline fanfiction reading, covering EPUB and Reader Mode export choices.",
+    relatedGuideIds: ["webFictionToEpub", "webSerialToEpub", "ao3ToEpub", "royalRoadToEpub", "saveWebFictionForEreader"],
     changefreq: "monthly",
-    lastModified: "2026-05-22",
+    lastModified: "2026-11-02",
     priority: "0.76",
     ogType: "article",
     twitterCard: "summary_large_image",
@@ -487,6 +496,7 @@ export const seoRoutes = {
     title: "Best Way to Save Web Fiction for an E-reader - FanFicBinder",
     description: "Save web fiction for Kindle, Kobo, Apple Books, or another e-reader by building a clean EPUB with readable chapter text and predictable metadata.",
     llmSummary: "Guide focused on choosing EPUB settings and transfer workflows that work well on dedicated e-readers.",
+    relatedGuideIds: ["webFictionToEpub", "fanfictionToEpub", "webSerialToEpub", "readFanfictionOffline", "readerModeHtml"],
     changefreq: "monthly",
     lastModified: "2026-05-22",
     priority: "0.76",
@@ -517,10 +527,11 @@ export const seoRoutes = {
     navLabel: "Send EPUB to Kindle",
     breadcrumbLabel: "Send EPUB to Kindle",
     title: "How to Send an EPUB to Kindle - FanFicBinder",
-    description: "After exporting from FanFicBinder, send an EPUB to Kindle with Amazon's approved Send to Kindle workflows.",
+    description: "Send an EPUB to Kindle after exporting from FanFicBinder, using Amazon's approved web uploader, Kindle app, or approved email, plus what to do if the book does not appear in your library.",
     llmSummary: "Kindle transfer guide focused on Send to Kindle delivery after EPUB export.",
+    relatedGuideIds: ["webFictionToEpub", "webSerialToEpub", "readerModeHtml", "saveWebFictionForEreader", "fetchBlocked"],
     changefreq: "monthly",
-    lastModified: "2026-05-22",
+    lastModified: "2026-11-02",
     priority: "0.75",
     ogType: "article",
     twitterCard: "summary_large_image",
@@ -551,6 +562,7 @@ export const seoRoutes = {
     title: "How to Move an EPUB to an E-reader - FanFicBinder",
     description: "Move exported EPUB files to Kindle, Kobo, Apple Books, Nook, and other e-reader apps or devices.",
     llmSummary: "Device-transfer guide covering Kindle, Kobo, Apple Books, and other EPUB reading workflows.",
+    relatedGuideIds: ["webFictionToEpub", "fanfictionToEpub", "readFanfictionOffline", "saveWebFictionForEreader", "ao3ToEpub"],
     changefreq: "monthly",
     lastModified: "2026-05-22",
     priority: "0.78",
@@ -583,6 +595,7 @@ export const seoRoutes = {
     title: "What to Do When URL Fetching Fails - FanFicBinder",
     description: "Troubleshoot blocked or failed chapter fetching by checking readability, switching to manual entry, and avoiding unsupported or rate-limited pages.",
     llmSummary: "Troubleshooting page for blocked fetches, unsupported source pages, rate limits, and manual fallback guidance.",
+    relatedGuideIds: ["readablePageRequirements", "webSerialToEpub", "ao3ToEpub", "fanfictionToEpub", "royalRoadToEpub"],
     changefreq: "monthly",
     lastModified: "2026-05-22",
     priority: "0.77",
@@ -615,6 +628,7 @@ export const seoRoutes = {
     title: "Manual Entry Workflow for Blocked Sites - FanFicBinder",
     description: "Use Manual Entry when a source website blocks automated fetching or when a chapter page does not expose clean readable HTML.",
     llmSummary: "Fallback workflow for blocked sites that still lets users build EPUB or Reader Mode files from copied chapter text.",
+    relatedGuideIds: ["fetchBlocked", "readablePageRequirements", "webSerialToEpub", "fanfictionToEpub", "sendEpubToKindle"],
     changefreq: "monthly",
     lastModified: "2026-05-22",
     priority: "0.75",
@@ -647,6 +661,7 @@ export const seoRoutes = {
     title: "What Makes a Page Readable for FanFicBinder - FanFicBinder",
     description: "Learn which kinds of chapter pages work best with FanFicBinder and why app shells, login walls, and non-HTML responses often fail.",
     llmSummary: "Explains the characteristics of pages that the tool can extract reliably and why some sources fail.",
+    relatedGuideIds: ["fetchBlocked", "manualEntry", "webSerialToEpub", "webFictionToEpub", "fanfictionToEpub"],
     changefreq: "monthly",
     lastModified: "2026-05-22",
     priority: "0.74",
@@ -675,6 +690,10 @@ export const seoRoutes = {
 
 export const seoRouteList = Object.values(seoRoutes);
 export const guideRouteList = seoRouteList.filter((route) => route.path.startsWith("/guides/"));
+
+const guideRouteById = new Map<string, SeoRoute>(
+  seoRouteList.map((route) => [route.id, route as SeoRoute]),
+);
 export const publicGuideRouteList = [
   seoRoutes.webFictionToEpub,
   seoRoutes.fanfictionToEpub,
@@ -690,6 +709,28 @@ export const publicGuideRouteList = [
   seoRoutes.manualEntry,
   seoRoutes.readablePageRequirements,
 ];
+
+/**
+ * Related guides for a guide page, from centralized route metadata.
+ * No current page: the guide hub case, so return all public guides.
+ * With a current guide: return its related list, excluding the current
+ * page, capped at 6, in metadata order. Unknown paths fall back to the
+ * first public guides excluding the current page, so navigation never
+ * silently becomes empty or self-linking.
+ */
+export function getRelatedGuideRoutes(currentPath?: string): SeoRoute[] {
+  if (!currentPath) return publicGuideRouteList;
+
+  const current = seoRouteList.find((route) => route.path === currentPath) as SeoRoute | undefined;
+  const relatedIds = current?.relatedGuideIds ?? [];
+  const related = relatedIds
+    .map((id) => guideRouteById.get(id))
+    .filter((route): route is SeoRoute => route !== undefined && route.path !== currentPath);
+
+  if (related.length > 0) return related.slice(0, 6);
+
+  return publicGuideRouteList.filter((route) => route.path !== currentPath).slice(0, 6);
+}
 
 export function getCanonicalUrl(route: SeoRoute): string {
   return route.path === "/" ? `${SITE_URL}/` : `${SITE_URL}${route.path}`;
