@@ -1,18 +1,12 @@
 import { Link } from "wouter";
-import { publicGuideRouteList, seoRoutes } from "@/lib/seo";
-
-const featuredGuideLinks = [
-  seoRoutes.webFictionToEpub,
-  seoRoutes.fanfictionToEpub,
-  seoRoutes.readerModeHtml,
-  seoRoutes.sendEpubToKindle,
-  seoRoutes.fetchBlocked,
-];
+import { publicGuideRouteList } from "@/lib/seo";
 
 export function GuideLinks({ currentPath }: { currentPath?: string }) {
-  const guideLinks = currentPath
-    ? featuredGuideLinks
-    : publicGuideRouteList;
+  // Guide pages previously linked only 5 featured guides, so AO3, web serial,
+  // read offline, and other guides were hard to discover from a guide page.
+  // Link all public guides here, so a searcher landing on any guide can
+  // reach the priority guides without going back through the hub.
+  const guideLinks = publicGuideRouteList;
 
   return (
     <nav aria-label="Related guides" className="border border-border rounded-lg p-4 bg-card/50">
