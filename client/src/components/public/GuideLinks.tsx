@@ -1,12 +1,12 @@
 import { Link } from "wouter";
-import { publicGuideRouteList } from "@/lib/seo";
+import { getRelatedGuideRoutes } from "@/lib/seo";
 
 export function GuideLinks({ currentPath }: { currentPath?: string }) {
-  // Guide pages previously linked only 5 featured guides, so AO3, web serial,
-  // read offline, and other guides were hard to discover from a guide page.
-  // Link all public guides here, so a searcher landing on any guide can
-  // reach the priority guides without going back through the hub.
-  const guideLinks = publicGuideRouteList;
+  // Related guides come from centralized metadata in seo.ts, not a
+  // hardcoded list here. Guide pages show 4 to 6 contextual guides,
+  // excluding the current page, and the hub link stays prominent.
+  // Without a current page, the hub case, all public guides are shown.
+  const guideLinks = getRelatedGuideRoutes(currentPath);
 
   return (
     <nav aria-label="Related guides" className="border border-border rounded-lg p-4 bg-card/50">
@@ -21,11 +21,7 @@ export function GuideLinks({ currentPath }: { currentPath?: string }) {
           <Link
             key={guide.path}
             href={guide.path}
-            className={`text-sm rounded-md border px-3 py-2 transition-colors ${
-              guide.path === currentPath
-                ? "border-primary text-primary bg-primary/10"
-                : "border-border text-muted-foreground hover:text-primary hover:border-primary/60"
-            }`}
+            className="text-sm rounded-md border px-3 py-2 transition-colors border-border text-muted-foreground hover:text-primary hover:border-primary/60"
           >
             {guide.navLabel}
           </Link>

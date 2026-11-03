@@ -47,6 +47,8 @@ import {
   buildLlmsTxt,
   buildRobotsTxt,
   getCanonicalUrl,
+  getRelatedGuideRoutes,
+  publicGuideRouteList,
   seoRoutes,
 } from "../client/src/lib/seo";
 
@@ -400,6 +402,8 @@ function testGuideConverterCtas() {
     seoRoutes.ao3ToEpub.path,
     seoRoutes.fanfictionToEpub.path,
     seoRoutes.webFictionToEpub.path,
+    seoRoutes.webSerialToEpub.path,
+    seoRoutes.readFanfictionOffline.path,
     seoRoutes.saveWebFictionForEreader.path,
     seoRoutes.sendEpubToKindle.path,
     seoRoutes.epubToEreader.path,
@@ -416,6 +420,82 @@ function testGuideConverterCtas() {
   assert.match(ao3Html, /preview the detected/i);
   assert.match(ao3Html, /import the whole work in reading order/i);
   assert.match(ao3Html, /Manual Entry/);
+}
+
+function testRelatedGuideRoutes() {
+  // Hub case, no current page, still exposes every public guide.
+  assert.deepEqual(
+    getRelatedGuideRoutes().map((route) => route.path),
+    publicGuideRouteList.map((route) => route.path),
+  );
+
+  const inbound = new Map<string, number>();
+  for (const route of publicGuideRouteList) {
+    const related = getRelatedGuideRoutes(route.path);
+    assert.ok(related.length >= 4 && related.length <= 6, `expected 4 to 6 related guides for ${route.path}`);
+    assert.ok(!related.some((item) => item.path === route.path), `related guides must exclude the current page ${route.path}`);
+    assert.ok(
+      related.every((item) => publicGuideRouteList.some((candidate) => candidate.path === item.path)),
+      `related guides for ${route.path} must be public guide routes`,
+    );
+
+    for (const item of related) {
+      inbound.set(item.path, (inbound.get(item.path) ?? 0) + 1);
+    }
+
+    // Built HTML: the Related guides nav itself must not self-link,
+    // must link the hub, and must link every related route.
+    const html = readRouteHtml(route.path);
+    const navStart = html.indexOf('aria-label="Related guides"');
+    assert.ok(navStart >= 0, `missing Related guides nav on ${route.path}`);
+    const navEnd = html.indexOf("</nav>", navStart);
+    assert.ok(navEnd > navStart, `missing Related guides nav close on ${route.path}`);
+    const nav = html.slice(navStart, navEnd);
+    assert.ok(!nav.includes(`href="${route.path}"`), `Related guides self-link on ${route.path}`);
+    assert.ok(nav.includes('href="/guides"'), `Related guides hub link missing on ${route.path}`);
+    for (const item of related) {
+      assert.ok(nav.includes(`href="${item.path}"`), `Related guides link missing for ${item.path} on ${route.path}`);
+    }
+  }
+
+  // Priority guides must receive meaningful related-nav links.
+  for (const priority of [
+    seoRoutes.ao3ToEpub.path,
+    seoRoutes.webSerialToEpub.path,
+    seoRoutes.readFanfictionOffline.path,
+    seoRoutes.sendEpubToKindle.path,
+  ]) {
+    assert.ok((inbound.get(priority) ?? 0) >= 3, `expected at least 3 related-nav links to ${priority}`);
+  }
+
+  // Unknown paths fall back to public guides, never to a self-link or an empty list.
+  const fallback = getRelatedGuideRoutes("/guides/does-not-exist");
+  assert.equal(fallback.length, 6);
+  assert.ok(!fallback.some((item) => item.path === "/guides/does-not-exist"));
+}
+
+function testCorrectedGuideClaims() {
+  const webSerialHtml = readRouteHtml(seoRoutes.webSerialToEpub.path);
+  assert.match(webSerialHtml, /Automated sequence limit/);
+  assert.match(webSerialHtml, /51 chapters/);
+  assert.doesNotMatch(webSerialHtml, /There is no single chapter limit/);
+
+  const ao3Html = readRouteHtml(seoRoutes.ao3ToEpub.path);
+  assert.match(ao3Html, /no reordering controls/);
+  assert.match(ao3Html, /Do not run Import All after a manual addition/);
+  assert.doesNotMatch(ao3Html, /add the remaining chapters with Manual Entry in order/);
+
+  const readOfflineHtml = readRouteHtml(seoRoutes.readFanfictionOffline.path);
+  assert.match(readOfflineHtml, /Listening offline is different/);
+  assert.match(readOfflineHtml, /offline voice/);
+  assert.doesNotMatch(readOfflineHtml, /reading and listening from that file do not need a connection/);
+
+  // AO3 title: short, natural, AO3 and EPUB each once, distinct from other titles.
+  assert.equal(seoRoutes.ao3ToEpub.title, "How to Export AO3 to EPUB - FanFicBinder");
+  assert.equal((seoRoutes.ao3ToEpub.title.match(/AO3/g) ?? []).length, 1);
+  assert.equal((seoRoutes.ao3ToEpub.title.match(/EPUB/g) ?? []).length, 1);
+  const titles = Object.values(seoRoutes).map((route) => route.title);
+  assert.equal(new Set(titles).size, titles.length, "SEO titles must be distinct");
 }
 
 function testBinderSerialization() {
@@ -701,6 +781,8 @@ await testInterruptedImportResume();
 await testPersistenceUnavailableFallback();
 testConverterHandoff();
 testGuideConverterCtas();
+testRelatedGuideRoutes();
+testCorrectedGuideClaims();
 testHomeHeadingSemantics();
 testPrerenderOutput();
 testSitemapMatchesSeoRegistry();

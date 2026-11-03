@@ -13,14 +13,17 @@ export default function ReadFanfictionOfflineGuide() {
       route={seoRoutes.readFanfictionOffline}
       eyebrow="Guide"
       title="How to Read Fanfiction Offline"
-      description="Turn fanfiction into EPUB or Reader Mode HTML so you can read or listen offline instead of staying inside a browser tab."
+      description="Turn fanfiction into EPUB or Reader Mode HTML so you can read offline, or listen with a supported read-aloud app, instead of staying inside a browser tab."
     >
       <PublicSection title="Direct answer">
         <p>
           To read fanfiction offline, first convert the chapters into a portable file. EPUB is the better default for Kindle, Kobo, Apple Books, and other e-readers. Reader Mode HTML is better when you want browser read-aloud tools or a speech app.
         </p>
         <p>
-          Download the file once, then you do not need an internet connection to keep reading or listening. That is the whole point: a long fic becomes a book in your library, not a browser tab you have to keep open.
+          Download the file once, then you do not need an internet connection to keep reading it. That is the whole point: a long fic becomes a book in your library, not a browser tab you have to keep open.
+        </p>
+        <p>
+          Listening offline is different. The file itself is local, but whether a browser or reading app can read it aloud without internet depends on that app and on whether it has an offline voice installed on your device. Some apps need a connection to fetch a voice, even for a local file, so check your app's offline or downloaded voice setting before you rely on listening offline.
         </p>
       </PublicSection>
 
@@ -56,16 +59,16 @@ export default function ReadFanfictionOfflineGuide() {
           <li>Add chapters with URL Fetcher or Manual Entry.</li>
           <li>Export EPUB or Reader Mode HTML.</li>
           <li>Move the file to your reading app or device.</li>
-          <li>Keep the exported file locally for later reading or listening.</li>
+          <li>Keep the exported file locally for later reading, and for listening if your app supports offline voices.</li>
         </ol>
         <p>
-          If a source blocks fetching, do not abandon the offline copy. The <Link href="/guides/manual-entry-for-blocked-sites" className="text-primary hover:text-primary/80">Manual Entry workflow</Link> lets you paste the chapter text and keep the same EPUB or Reader Mode output.
+          If a source blocks fetching, do not abandon the offline copy. The <Link href="/guides/manual-entry-for-blocked-sites" className="text-primary hover:text-primary/80">Manual Entry workflow</Link> lets you paste the chapter text and keep the same EPUB or Reader Mode output. Manual chapters always go to the end of the binder, so add them in reading order, and do not use Manual Entry to fill a middle gap after later chapters are already in the binder.
         </p>
       </PublicSection>
 
       <PublicSection title="Common questions">
         <p>
-          <strong>Do I need internet after I download the EPUB?</strong> No. Once the EPUB or Reader Mode file is on your device, reading and listening from that file do not need a connection. You only need internet again to fetch new chapters or to send a new file to Kindle.
+          <strong>Do I need internet after I download the EPUB?</strong> For reading, no. Once the EPUB or Reader Mode file is on your device, reading it does not need a connection. For listening, it depends on your app: offline listening works only if your browser or reading app supports it and has an offline voice available on your device. You need internet again to fetch new chapters or to send a new file to Kindle, regardless of format.
         </p>
         <p>
           <strong>What if I only have a phone?</strong> You do not need a dedicated e-reader. Apple Books, Kobo, and other reading apps open EPUB files, and Reader Mode HTML opens in a browser for read-aloud.
